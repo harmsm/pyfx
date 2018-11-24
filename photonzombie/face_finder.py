@@ -63,6 +63,8 @@ class FaceFinder:
 
         return mask
 
+
+"""
 class Stack:
 
     def __init__(self,training_data,look_for=("left_eye","right_eye")):
@@ -82,3 +84,4 @@ class Stack:
 
             bw = color.rgb2gray(np.array(Image.open(img)))
             eye_mask = self._finder.detect(bw,self._look_for)
+"""

@@ -99,7 +99,7 @@ class Particle:
         """
 
         # Create mini array to draw object
-        size = self._radius*(self._expansion_factor**(self._num_rings - 1)) + 1
+        size = self._radius*(self._expansion_factor**(self._num_rings - 1)) + 3
         self._size = int(np.ceil(size))
         img = np.zeros((2*self._size + 1,2*self._size + 1),dtype=np.float)
 
