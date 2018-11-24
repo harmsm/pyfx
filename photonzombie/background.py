@@ -1,4 +1,8 @@
 
+import numpy as np
+from PIL import Image
+from skimage import color, filters
+
 class Background:
     """
     Class to measure difference between each frame and a background frame.
