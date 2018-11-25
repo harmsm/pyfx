@@ -16,7 +16,13 @@ def _coarse_grain(some_array,coarseness=5):
     temp = density.reshape((new_shape[0] // coarseness, coarseness,
                             new_shape[1] // coarseness, coarseness))
 
-    return np.sum(temp, axis=(1,3))
+    x = np.arange(0,new_shape[0],coarseness) + coarseness/2
+    y = np.arange(0,new_shape[1],coarseness) + coarseness/2
+    x, y = np.meshgrid(x,y,indexing="ij")
+
+    coord = np.stack((x.ravel(),y.ravel())).T
+
+    return coord, np.sum(temp, axis=(1,3))
 
 
 class World:
@@ -42,7 +48,7 @@ class World:
         self._particles.append(Particle())
         self._particles[-1].create_particle(x_coord,y_coord)
 
-    def _update_boltzmann_weight(self,new_img):
+    def _update_potential(self,new_img):
         """
         Load in a new diff_array and populate the boltzmann weights.
 
@@ -59,15 +65,9 @@ class World:
 
         self._coarseness = np.int(np.ceil(self._coarse_grain*np.max(self._bg.bw.shape)))
 
-        z = _coarse_grain(self._w,self._coarseness)
+        x, z = _coarse_grain(self._w,self._coarseness)
 
-        x = np.arange(0,z.shape[0],self._coarseness) + self._coarseness/2
-        y = np.arange(0,z.shape[1],self._coarseness) + self._coarseness/2
-        x, y = np.meshgrid(x,y,indexing="ij")
-
-        self._field_coord = np.stack((x.ravel(),y.ravel())).T
-
-        # renormalize to 1 (just to make sure)
+        self._field_coord = np.copy(x)
         self._field = z.ravel()
 
     def _update_forces(self):
@@ -87,7 +87,7 @@ class World:
             x_sign = 2.0*((d_coord[:,0] > 0) - 0.5)
             y_sign = 2.0*((d_coord[:,1] > 0) - 0.5)
 
-            force = self._force_scale*self._field/r_sq
+            force = self._force_scale*self._beta*np.log(self._field)/r_sq
 
             force_x = np.sum(x_sign*force*np.sqrt(x_sq/r_sq))
             force_y = np.sum(y_sign*force*np.sqrt(y_sq/r_sq))
@@ -109,7 +109,7 @@ class World:
         self._coarse_grain = coarse_grain
 
         # Create arrays for selecting Boltzmann-weighted coordinates
-        self._update_boltzmann_weight(start_frame_file)
+        self._update_potential(start_frame_file)
         self._p_indexes = np.array(range(len(self._p)))
 
         # How many particles to create (based on how different this image
@@ -126,7 +126,7 @@ class World:
 
         # Update images
         if new_img is not None:
-            self._update_boltzmann_weight(new_img)
+            self._update_potential(new_img)
 
         self._update_forces()
         self._particle_coords = np.zeros((len(self._particles),2),
