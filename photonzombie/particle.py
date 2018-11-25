@@ -89,6 +89,8 @@ class Particle:
         else:
             self._intensity = intensity
 
+        self._forces = np.array((0,0),dtype=np.float)
+        self._mass = 4/3*np.pi*self._radius**3
         self._velocity = np.random.normal(0,some_scale,2)
 
         self._build_sprite()
@@ -134,9 +136,17 @@ class Particle:
         self._sprite[:,:,:3] = 255*matplotlib.colors.hsv_to_rgb(col)
         self._sprite[:,:,3] = self._alpha*255*img
 
-    def _advance_time(self):
+    def advance_time(self):
 
-        self._coord = self._coord + self._velocity
+        # dt is defined as 1
+        self._accel  = self._forces/self._mass
+        new_vel = self._accel + self._velocity
+        self._coord = self._accel/2 + (self._velocity + new_vel)/2 + self._coord
+        self._velocity = np.copy(new_vel)
+
+    def add_force(self,forces):
+
+        self._forces = np.copy(forces)
 
     def write_to_image(self,img_matrix,advance=True):
         """
@@ -146,7 +156,7 @@ class Particle:
 
         # Update the particle position
         if advance:
-            self._advance_time()
+            self.advance_time()
 
         # Now figure out where this should go in the output matrix
         x_min = int(np.round(self._coord[0] - self._size - 1))
@@ -211,3 +221,7 @@ class Particle:
     @property
     def out_of_frame(self):
         return self._out_of_frame
+
+    @property
+    def coord(self):
+        return self._coord
