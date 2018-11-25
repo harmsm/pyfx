@@ -7,17 +7,7 @@ from skimage import draw
 import copy
 import matplotlib
 
-def _random_pareto(a,minimum=1,maximum=6):
-    """
-    Sample from a pareto distribution, forcing output to be between minimum
-    and maximum.
-    """
-
-    b = np.random.pareto(a) + minimum
-    if b > maximum:
-        b = maximum
-
-    return b
+from . import util
 
 class Particle:
     """
@@ -80,12 +70,12 @@ class Particle:
         self._nearest = nearest
 
         if radius is None:
-            self._radius = _random_pareto(a)
+            self._radius = util.random_pareto(a)
         else:
             self._radius = radius
 
         if intensity is None:
-            self._intensity = _random_pareto(b,maximum=5)/5.0
+            self._intensity = util.random_pareto(b,maximum=5)/5.0
         else:
             self._intensity = intensity
 
