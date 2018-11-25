@@ -4,16 +4,18 @@ from . import Background, Particle
 from . import util
 
 
-
-class World:
+class ParticleCollection:
     """
     Keeps track of particles, integrates with time.
     """
 
-    def __init__(self,bg_file,force_scale=1):
+    def __init__(self,dimensions,force_scale=1):
 
-        self._bg_file = bg_file
-        self._bg = Background(self._bg_file)
+        self._dimensions = np.array(dimensions,dtype=np.int)
+        if len(self._dimensions) != 2 or np.sum(dimensions > 0) != 2
+            err = "dimensions must be list-like with 2 positive entries\n"
+            raise ValueError(err)
+
         self._force_scale = force_scale
 
     def _add_particle(self):
@@ -28,9 +30,9 @@ class World:
         self._particles.append(Particle())
         self._particles[-1].create_particle(x_coord,y_coord)
 
-    def _update_potential(self,new_img):
+    def _update_potential(self,potential):
         """
-        Load in a new diff_array and populate the boltzmann weights.
+        Load in a new potential and populate the boltzmann weights.
 
         self._w: boltzmann weights
         self._p: boltzmann weighted probabilities
@@ -38,12 +40,12 @@ class World:
         self._field_coord: x-y coordinates of center of each cell
         """
 
-        self._diff_array = self._bg.get_frame_diff(new_img)
+        self._potential = potential
 
-        self._w = np.exp(self._beta*self._diff_array)
+        self._w = np.exp(self._beta*self._potential)
         self._p = np.ravel(self._w)/np.sum(self._w)
 
-        self._coarseness = np.int(np.ceil(self._coarse_grain*np.max(self._bg.bw.shape)))
+        self._coarseness = np.int(np.ceil(self._coarse_grain*np.max(self._dimensions)))
 
         x, z = util.coarse_grain(self._w,self._coarseness)
 
@@ -52,6 +54,8 @@ class World:
 
     def _update_forces(self):
         """
+        Update the forces experienced by the particle collection given their
+        current positions and the potential.
         """
 
         for i, p in enumerate(self._particles):
@@ -76,13 +80,32 @@ class World:
             p.add_force(np.array((force_x,force_y)))
 
     def create_particles(self,
-                         start_frame_file,
-                         particle_density=1e-5,
+                         potential=None,
                          beta=10,
                          num_particles=None,
+                         particle_density=1e-5,
                          coarse_grain=0.05):
+        """
+        Create an initial collection of particles.
 
-        self._start_frame_file = start_frame_file
+        potential: a potential surface (2D array of floats) or None.  If None,
+                   a uniform potential of 0 is used.
+        beta: inverse temperature (1/kT)
+        num_particles: number of particles to add (integer) or None.  If None,
+                       particles are added using the particle_density.  If
+                       num_particles is specified, particle_density is ignored.
+        particle_density: number of particles to add per potential per area.
+                          Ignored if num_particles is set.
+        coarse_grain: degree to coarse-grain potential.  Float between 0 and 1.
+                      A value of 0.05 means potential will be broken into blocks
+                      5% of the size of the longest dimension, and then the
+                      average potential for that block assigned.
+        """
+
+        self._potential = potential
+        if potential is None:
+            self._potential = np.zeros(self._dimensions,dtype=np.float)
+
         self._particle_density = particle_density
         self._beta = beta
         self._num_particles = num_particles
@@ -102,11 +125,15 @@ class World:
             self._add_particle()
 
 
-    def advance_time(self,new_img=None):
+    def advance_time(self,new_potential=None):
+        """
+        Take a time step.  If new_potential is not None, calculate the forces
+        on the particles using this new potential.
+        """
 
         # Update images
-        if new_img is not None:
-            self._update_potential(new_img)
+        if new_potential is not None:
+            self._update_potential(new_potential)
 
         self._update_forces()
         self._particle_coords = np.zeros((len(self._particles),2),
@@ -117,9 +144,12 @@ class World:
 
 
     def write_out(self):
+        """
+        Write out sprites to an image array.
+        """
 
-        out_array = np.zeros((self._bg.bw.shape[0],
-                              self._bg.bw.shape[1],4),dtype=np.uint8)
+        out_array = np.zeros((self._dimensions[0],self._dimensions[1],4),
+                              dtype=np.uint8)
         for p in self._particles:
             out_array = p.write_to_image(out_array)
 
