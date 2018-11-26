@@ -1,3 +1,3 @@
 
-from empirical import Empirical
-from radial import Radial
+from .empirical import Empirical
+from .radial import Radial

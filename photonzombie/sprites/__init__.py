@@ -1,2 +1,2 @@
 
-from glowing_particle import GlowingParticle
+from .glowing_particle import GlowingParticle

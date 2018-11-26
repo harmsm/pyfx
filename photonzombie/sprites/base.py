@@ -22,7 +22,7 @@ class Sprite:
 
         # Create output image, RGBA
         self._sprite = np.zeros((5,5,4),dtype=np.uint8)
-        self._sprite[:,:,:3] = 255)
+        self._sprite[:,:,:3] = 255
         self._sprite[:,:,3] = 255
 
     def write_to_image(self,img_matrix):

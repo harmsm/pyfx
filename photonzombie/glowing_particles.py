@@ -2,7 +2,7 @@
 from . import physics
 from . import sprites
 
-class ParticleCollection:
+class GlowingParticles:
     """
     """
 
