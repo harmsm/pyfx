@@ -29,7 +29,7 @@ class Particle:
             self._forces = np.array((0.0,0.0),dtype=np.float)
 
         # dt is defined as 1
-        self._accel  = self._forces/self._mass
+        self._accel = self._forces/self._mass
         new_vel = self._accel*dt + self._velocity
         self._coord = (dt*dt)*self._accel/2 + (dt)*(self._velocity + new_vel)/2 + self._coord
         self._velocity = np.copy(new_vel)

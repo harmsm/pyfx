@@ -1,6 +1,4 @@
 
-from .particles import ParticleCollection
-
 class GlowingParticle:
 
     def __init__(self,
@@ -188,24 +186,6 @@ class ParticleCollection:
 
             self._particles.append((p,sprite))
 
-
-
-
-
-    @property
-    def potential_surface(self):
-        return self._potential_surface
-
-    @potential_surface.setter
-    def potential_surface(self,potential_surface):
-        self._potential_surface = np.copy(potential_surface)
-        self._world.update_potential(self._potential_surface)
-
-
-
-
-
-
     def write_out(self):
         """
         Write out sprites to an image array.
@@ -217,3 +197,12 @@ class ParticleCollection:
             out_array = p.write_to_image(out_array)
 
         return out_array
+
+    @property
+    def potential_surface(self):
+        return self._potential_surface
+
+    @potential_surface.setter
+    def potential_surface(self,potential_surface):
+        self._potential_surface = np.copy(potential_surface)
+        self._world.update_potential(self._potential_surface)
