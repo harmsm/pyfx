@@ -5,18 +5,14 @@ from . import util
 
 from scipy import interpolate
 
-class ParticleCollection:
+class Potential:
     """
     Keeps track of particles, integrates with time.
     """
 
-    def __init__(self,dimensions=(1080,1920),force_scale=1,kT=1,dt=1):
+    def __init__(self,obs_potential,force_scale=1,kT=1,dt=1):
 
-        self._dimensions = np.array(dimensions,dtype=np.int)
-        if len(self._dimensions) != 2 or np.sum(dimensions > 0) != 2
-            err = "dimensions must be list-like with 2 positive entries\n"
-            raise ValueError(err)
-
+        self._dimensions = np.copy(obs_potential.shape)
         self._force_scale = force_scale
         self._kT = kT
         self._dt = dt
@@ -24,27 +20,17 @@ class ParticleCollection:
         self._x_grid = np.array(range(self._dimensions[0]),dtype=np.int)
         self._y_grid = np.array(range(self._dimensions[1]),dtype=np.int)
 
-    def _add_particle(self):
-        """
-        Add a particle, choosing its location based on the Boltzmann weight
-        of the potential surface.
-        """
+        self.update_potential(obs_potential)
 
-        position = np.random.choice(self._p_indexes,p=self._p)
-        y_coord = np.mod(position,self._w.shape[1])
-        x_coord = np.int((position - y_coord)/self._w.shape[1])
-
-        self._particles.append(Particle())
-        self._particles[-1].create_particle(x_coord,y_coord)
-
-    def _update_potential(self,obs_potential):
+    def update_potential(self,obs_potential):
         """
         Load in a new potential.
 
+        obs_potential should be a 2D array of a potential.
+
+        self._potential is a spline approximation of the observed potential
         self._w: boltzmann weights
-        self._p: boltzmann weighted probabilities
-        self._field: coarse-grained field of boltzmann weighted probability
-        self._field_coord: x-y coordinates of center of each cell
+        self._p: boltzmann weighted probabilities (as a 1D array)
         """
 
         self._obs_potential = obs_potential
@@ -52,11 +38,24 @@ class ParticleCollection:
 
         self._w = np.exp(-self._potential/self._kT)
         self._p = np.ravel(self._w)/np.sum(self._w)
+        self._p_indexes = np.array(range(len(self._p)))
 
         #self._coarseness = np.int(np.ceil(self._coarse_grain*np.max(self._dimensions)))
         #x, z = util.coarse_grain(self._w,self._coarseness)
         #self._field_coord = np.copy(x)
         #self._field = z.ravel()
+
+    def sample_coord(self):
+        """
+        Return a set of coordinates sampled from a Boltzmann-weighted
+        potential surface.
+        """
+
+        position = np.random.choice(self._p_indexes,p=self._p)
+        y_coord = np.mod(position,self._w.shape[1])
+        x_coord = np.int((position - y_coord)/self._w.shape[1])
+
+        return np.array((x_coord,y_coord))
 
     def create_particles(self,
                          potential=None,
@@ -148,16 +147,3 @@ class ParticleCollection:
 
 
         #self._update_forces()
-
-
-    def write_out(self):
-        """
-        Write out sprites to an image array.
-        """
-
-        out_array = np.zeros((self._dimensions[0],self._dimensions[1],4),
-                              dtype=np.uint8)
-        for p in self._particles:
-            out_array = p.write_to_image(out_array)
-
-        return out_array

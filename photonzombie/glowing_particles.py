@@ -3,18 +3,23 @@ from .particles import ParticleCollection
 
 class GlowingParticle:
 
-    def __init__(self,hue=0.5,
+    def __init__(self,
+                 radius,
+                 hue=0.5,
                  num_rings=8,expansion_factor=1.3,
                  alpha=1,alpha_decay=1,
                  intensity_pareto=1,
                  intensity_maximum=5.0):
         """
+        radius: particle radius
         hue: hue (0 to 1 scale)
         num_rings: how many rings to expand out from the point source
         expansion_factor: how much bigger each ring is than the previous ring
         alpha: maximum alpha for center of particle (0 to 1 scale)
         alpha_decay: multiply alpha by this value for each new ring
         """
+
+        self._radius = radius
 
         if hue < 0 or hue > 1:
             err = "hue must be between 0 and 1\n"
@@ -51,8 +56,6 @@ class GlowingParticle:
             self._intensity = intensity
 
         self._out_of_frame = False
-
-
 
 
     def _build_sprite(self):
@@ -165,3 +168,52 @@ class GlowingParticle:
     @property
     def out_of_frame(self):
         return self._out_of_frame
+
+
+class ParticleCollection:
+
+
+    def __init__(self,dimensions=(1080,1920)):
+
+        self._world = particles.World()
+
+
+    def _make_it(self):
+
+        for i in range(self._num_particles):
+
+            xy = self._world.sample_coord()
+            p = particles.Particle(xy)
+            sprite = GlowingParticle(p.radius)
+
+            self._particles.append((p,sprite))
+
+
+
+
+
+    @property
+    def potential_surface(self):
+        return self._potential_surface
+
+    @potential_surface.setter
+    def potential_surface(self,potential_surface):
+        self._potential_surface = np.copy(potential_surface)
+        self._world.update_potential(self._potential_surface)
+
+
+
+
+
+
+    def write_out(self):
+        """
+        Write out sprites to an image array.
+        """
+
+        out_array = np.zeros((self._dimensions[0],self._dimensions[1],4),
+                              dtype=np.uint8)
+        for p in self._particles:
+            out_array = p.write_to_image(out_array)
+
+        return out_array
