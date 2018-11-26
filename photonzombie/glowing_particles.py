@@ -1,4 +1,7 @@
 
+from . import physics
+from . import sprites
+
 class ParticleCollection:
     """
     """
