@@ -3,13 +3,14 @@ import numpy as np
 from . import Background, Particle
 from . import util
 
+from scipy import interpolate
 
 class ParticleCollection:
     """
     Keeps track of particles, integrates with time.
     """
 
-    def __init__(self,dimensions,force_scale=1):
+    def __init__(self,dimensions=(1080,1920),force_scale=1,kT=1,dt=1):
 
         self._dimensions = np.array(dimensions,dtype=np.int)
         if len(self._dimensions) != 2 or np.sum(dimensions > 0) != 2
@@ -17,10 +18,16 @@ class ParticleCollection:
             raise ValueError(err)
 
         self._force_scale = force_scale
+        self._kT = kT
+        self._dt = dt
+
+        self._x_grid = np.array(range(self._dimensions[0]),dtype=np.int)
+        self._y_grid = np.array(range(self._dimensions[1]),dtype=np.int)
 
     def _add_particle(self):
         """
-        Add a particle, choosing its location based on the Boltzmann weight.
+        Add a particle, choosing its location based on the Boltzmann weight
+        of the potential surface.
         """
 
         position = np.random.choice(self._p_indexes,p=self._p)
@@ -30,9 +37,9 @@ class ParticleCollection:
         self._particles.append(Particle())
         self._particles[-1].create_particle(x_coord,y_coord)
 
-    def _update_potential(self,potential):
+    def _update_potential(self,obs_potential):
         """
-        Load in a new potential and populate the boltzmann weights.
+        Load in a new potential.
 
         self._w: boltzmann weights
         self._p: boltzmann weighted probabilities
@@ -40,44 +47,16 @@ class ParticleCollection:
         self._field_coord: x-y coordinates of center of each cell
         """
 
-        self._potential = potential
+        self._obs_potential = obs_potential
+        self._potential = interpolate.RectBivariateSpline(x,y,pot)
 
-        self._w = np.exp(self._beta*self._potential)
+        self._w = np.exp(-self._potential/self._kT)
         self._p = np.ravel(self._w)/np.sum(self._w)
 
-        self._coarseness = np.int(np.ceil(self._coarse_grain*np.max(self._dimensions)))
-
-        x, z = util.coarse_grain(self._w,self._coarseness)
-
-        self._field_coord = np.copy(x)
-        self._field = z.ravel()
-
-    def _update_forces(self):
-        """
-        Update the forces experienced by the particle collection given their
-        current positions and the potential.
-        """
-
-        for i, p in enumerate(self._particles):
-
-            # Difference in coordinates
-            d_coord = self._field_coord - p.coord
-            d_coord_sq = d_coord**2
-            r_sq = np.sum(d_coord_sq,1)
-
-            x_sq = r_sq - d_coord_sq[:,1]
-            y_sq = r_sq - d_coord_sq[:,0]
-
-            x_sign = 2.0*((d_coord[:,0] > 0) - 0.5)
-            y_sign = 2.0*((d_coord[:,1] > 0) - 0.5)
-
-            force = self._force_scale*self._beta*np.log(self._field)/r_sq
-
-            force_x = np.sum(x_sign*force*np.sqrt(x_sq/r_sq))
-            force_y = np.sum(y_sign*force*np.sqrt(y_sq/r_sq))
-
-            # Update force
-            p.add_force(np.array((force_x,force_y)))
+        #self._coarseness = np.int(np.ceil(self._coarse_grain*np.max(self._dimensions)))
+        #x, z = util.coarse_grain(self._w,self._coarseness)
+        #self._field_coord = np.copy(x)
+        #self._field = z.ravel()
 
     def create_particles(self,
                          potential=None,
@@ -135,12 +114,40 @@ class ParticleCollection:
         if new_potential is not None:
             self._update_potential(new_potential)
 
-        self._update_forces()
-        self._particle_coords = np.zeros((len(self._particles),2),
-                                         dtype=np.float)
+        #self._particle_coords = np.zeros((len(self._particles),2),
+        #                                 dtype=np.float)
+
         for i, p in enumerate(self._particles):
-            p.advance_time()
-            self._particle_coords[i,:] = p.coord
+
+            Fx = -self._potential(p.coord[0],p.coord[1],dx=1)
+            Fy = -self._potential(p.coord[0],p.coord[1],dy=1)
+
+            ## ADD POINT SOURCE INTERACTION HERE
+            ## ADD LANGEVIN DYNAMICS HERE
+
+            p.advance_time(np.array((Fx,Fy)))
+
+            #self._particle_coords[i,:] = p.coord
+
+
+            # Difference in coordinates
+            #d_coord = self._field_coord - p.coord
+            #d_coord_sq = d_coord**2
+            #r_sq = np.sum(d_coord_sq,1)
+
+            #x_sq = r_sq - d_coord_sq[:,1]
+            #y_sq = r_sq - d_coord_sq[:,0]
+
+            #x_sign = 2.0*((d_coord[:,0] > 0) - 0.5)
+            #y_sign = 2.0*((d_coord[:,1] > 0) - 0.5)
+
+            #force = self._force_scale*self._beta*np.log(self._field)/r_sq
+
+            #force_x = np.sum(x_sign*force*np.sqrt(x_sq/r_sq))
+            #force_y = np.sum(y_sign*force*np.sqrt(y_sq/r_sq))
+
+
+        #self._update_forces()
 
 
     def write_out(self):
