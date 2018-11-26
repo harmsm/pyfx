@@ -3,23 +3,22 @@ __description__ = \
 """
 
 import numpy as np
-from . import util
 
 class Particle:
     """
+    Generic particle.  The particle is defined by three intrinsic
+    characteristics: radius, mass and charge.  It
     """
 
-    def __init__(self,x,y,radius=None,kT=1,radius_pareto=1):
+    def __init__(self,x,y,radius=1.0,charge=1.0,kT=1.0,mass=None):
 
         self._coord = np.array((x,y),dtype=np.float)
         self._radius = radius
+        self._charge = charge
         self._kT = kT
-        self._radius_pareto = radius_pareto
 
-        if self._radius is None:
-            self._radius = util.random_pareto(self._radius_pareto)
-
-        self._mass = 4/3*np.pi*(self._radius**3)
+        if mass is None:
+            self._mass = 4/3*np.pi*(self._radius**3)
         self._velocity = np.random.normal(0,2*self._kT,2)
         self._forces = np.array((0,0),dtype=np.float)
 
@@ -39,5 +38,17 @@ class Particle:
         return self._radius
 
     @property
+    def mass(self):
+        return self._mass
+
+    @property
+    def charge(self):
+        return self._charge
+
+    @property
     def coord(self):
         return self._coord
+
+    @property
+    def velocity(self):
+        return self._velocity

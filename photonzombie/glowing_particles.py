@@ -1,15 +1,30 @@
 
-class GlowingParticle:
+def _random_pareto(a,minimum=1,maximum=np.inf):
+    """
+    Sample from a pareto distribution, forcing output to be between minimum
+    and maximum.
+    """
+
+    b = np.random.pareto(a) + minimum
+    if b > maximum:
+        b = maximum
+
+    return b
+
+
+class GlowingParticleSprite:
 
     def __init__(self,
-                 radius,
+                 radius=1,
+                 intensity=1,
                  hue=0.5,
-                 num_rings=8,expansion_factor=1.3,
-                 alpha=1,alpha_decay=1,
-                 intensity_pareto=1,
-                 intensity_maximum=5.0):
+                 num_rings=8,
+                 expansion_factor=1.3,
+                 alpha=1,
+                 alpha_decay=1):
         """
         radius: particle radius
+        intensity: how brightly the particle glows (0 to 1 scale)
         hue: hue (0 to 1 scale)
         num_rings: how many rings to expand out from the point source
         expansion_factor: how much bigger each ring is than the previous ring
@@ -17,7 +32,15 @@ class GlowingParticle:
         alpha_decay: multiply alpha by this value for each new ring
         """
 
+        if radius <= 0:
+            err = "radius must be positive\n"
+            raise ValueError(err)
         self._radius = radius
+
+        if intensity < 0 or intensity > 1:
+            err = "intensity must be between 0 and 1\n"
+            raise ValueError(err)
+        self._intensity = intensity
 
         if hue < 0 or hue > 1:
             err = "hue must be between 0 and 1\n"
@@ -43,15 +66,6 @@ class GlowingParticle:
             err = "alpha decay must be larger than 0\n"
             raise ValueError(err)
         self._alpha_decay = alpha_decay
-
-        self._intensity_pareto = intensity_pareto
-        self._intensity_maximum = intensity_maximum
-
-        if intensity is None:
-            self._intensity = util.random_pareto(self._intensity_pareto,
-                                                 self._intensity_maximum)/self._intensity_maximum
-        else:
-            self._intensity = intensity
 
         self._out_of_frame = False
 
@@ -99,8 +113,7 @@ class GlowingParticle:
 
     def write_to_image(self,img_matrix):
         """
-        Write the sprite to an image.  By default, each write_to_image call
-        advances the time step by one.
+        Write the sprite to an image.
         """
 
         # Now figure out where this should go in the output matrix
@@ -168,23 +181,73 @@ class GlowingParticle:
         return self._out_of_frame
 
 
+
 class ParticleCollection:
+    """
+    """
 
+    def __init__(self,
+                 hue=0.5,
+                 dimensions=(1080,1920),
+                 radius_pareto=1.0,
+                 radius_max=100,
+                 intensity_pareto=1.0,
+                 intensity_max=100):
 
-    def __init__(self,dimensions=(1080,1920)):
+        self._hue = hue
+        self._dimensions = np.array(dimensions,dtype=np.int)
+        self._radius_pareto = radius_pareto
+        self._radius_max = radius_max
+        self._intensity_pareto = intensity_pareto
+        self._intensity_max = intensity_max
 
-        self._world = particles.World()
+        self._num_particles = 0
+        self._particles = []
+        self.potentials = []
 
+    def construct_particles(self,num_particles=50,use_potential=0,
+                            num_equilibrate_steps=0):
+        """
+        Populate list of particles.
 
-    def _make_it(self):
+        num_particles: how many particles to create
+        use_potential: which potential to sample from to generate x,y
+                       coordinates of the particles. If less than one,
+                       do not use a potential -- choose randomly.  If there
+                       is no potential loaded, also sample randomly.
+        """
+
+        self._num_particles = num_particles
 
         for i in range(self._num_particles):
 
-            xy = self._world.sample_coord()
-            p = particles.Particle(xy)
-            sprite = GlowingParticle(p.radius)
+            radius = _random_pareto(self._radius_pareto,maximum=self._radius_max)
+            intensity = _random_pareto(self._intensity_pareto,maximum=self._intensity_max)
+            intensity = intensity/self._intensity_max
+
+            if len(self.potentials) > 0 and use_potential >= 0:
+                x, y = self.potentials[use_potential].sample_coord()
+            else:
+                x = np.random.choice(range(self._dimensions[0]))
+                y = np.random.choice(range(self._dimensions[1]))
+
+            p = physics.Particle(x,y,radius=radius)
+            sprite = GlowingParticleSprite(radius,intensity,self._hue)
 
             self._particles.append((p,sprite))
+
+        # equilibrate
+        for i in range(num_equilibrate_steps):
+            self.advance_time()
+
+    def advance_time(self,dt=1.0):
+
+        for p in self._particles:
+
+            forces = np.array([0.0,0.0],dtype=np.float)
+            for pot in self.potentials:
+                forces += pot.get_forces(p[0].coord)
+            p.advance_time(forces,dt)
 
     def write_out(self):
         """
@@ -197,12 +260,3 @@ class ParticleCollection:
             out_array = p.write_to_image(out_array)
 
         return out_array
-
-    @property
-    def potential_surface(self):
-        return self._potential_surface
-
-    @potential_surface.setter
-    def potential_surface(self,potential_surface):
-        self._potential_surface = np.copy(potential_surface)
-        self._world.update_potential(self._potential_surface)

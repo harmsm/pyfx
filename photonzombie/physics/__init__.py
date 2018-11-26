@@ -1,1 +1,1 @@
-from .collection import ParticleCollection
+from .potential import RadialPotential, EmpiricalPotential
