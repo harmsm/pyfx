@@ -18,7 +18,11 @@ class Potential:
 
         return np.random.normal(0,1,2)
 
-    def get_forces(self):
+    def get_energy(self,coord):
+
+        return 0.0
+
+    def get_forces(self,coord):
 
         return np.array([0,0],dtype=np.float)
 

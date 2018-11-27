@@ -49,6 +49,10 @@ class Empirical(Potential):
 
         return x_coord, y_coord
 
+    def get_energy(self,coord):
+
+        return self._potential(coord[0],coord[1])
+
     def get_forces(self,coord):
         """
         Return force applied in x and y at position x,y.

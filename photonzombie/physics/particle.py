@@ -1,6 +1,3 @@
-__description__ = \
-"""
-"""
 
 import numpy as np
 

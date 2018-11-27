@@ -3,7 +3,7 @@ import colorsys
 
 class ColorShifter:
     """
-    Class that returns an RGB value that shifts over times.
+    Class that returns an RGB value that shifts over time.
     """
 
     def __init__(self,initial_hue=None,color_step=0.01,min_hue=0.28,max_hue=0.56,
@@ -35,7 +35,7 @@ class ColorShifter:
             self._sign = 1
 
 
-    def _advance_time(self):
+    def advance_time(self):
 
         hue = self._current_hue + self._sign*self._color_step
         if self._sign == 1:
@@ -51,12 +51,14 @@ class ColorShifter:
                 self._sign = 1
                 self._current_hue = self._current_hue + self._color_step
 
-
-    def get_color(self,advance=True):
-
-        if advance:
-            self._advance_time()
+    @property
+    def rgb(self):
 
         rgb = colorsys.hsv_to_rgb(self._current_hue,self._saturation,self._value)
 
         return np.array(rgb)
+
+    @property
+    def hsv(self):
+
+        return np.array((self._hue,self._saturation,self._value),dtype=np.float)

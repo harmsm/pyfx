@@ -79,6 +79,17 @@ class Radial(Potential):
 
         return np.array((x,y))
 
+    def get_energy(self,coord,particle_charge=1.0):
+
+        r = np.sqrt(np.sum((coord - self._center_coord)**2))
+
+        if r == 0:
+            E = np.nan
+        else:
+            E = self._pot_mag*particle_charge/r
+
+        return E
+
     def get_forces(self,coord,particle_charge=1.0):
 
         r = np.sqrt(np.sum((coord - self._center_coord)**2))
