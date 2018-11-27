@@ -5,7 +5,7 @@ import numpy as np
 class Radial(Potential):
 
     def __init__(self,center_coord,dimensions=(1080,1920),
-                 pot_mag=1.0,r_min=2,kT=1):
+                 pot_mag=1.0,min_r=2,kT=1):
         """
         For a positively charged particle:
             pot_mag > 0 -> repulsive; pot_mag < 0 -> attractive
@@ -28,9 +28,9 @@ class Radial(Potential):
         self._dimensions = np.array(dimensions,dtype=np.int)
 
         self._pot_mag = pot_mag
-        self._r_min = r_min
+        self._min_r = min_r
 
-        super(self).__init__(kT)
+        super().__init__(kT)
 
         self.update()
 
@@ -51,19 +51,33 @@ class Radial(Potential):
         self._p = self._w/np.sum(self._w)
         self._p_indexes = np.array(range(len(self._p)),dtype=np.int)
 
-    def sample_coord(self,particle_charge=1.0):
+    def sample_coord(self,particle_charge=1.0,max_tries=500):
 
         # Sample a radius from the Boltzmann-weighted possibilities
         r = self._possible_r[np.random.choice(self._p_indexes,p=self._p)]
 
-        # Grab a random theta
-        theta = 2*np.pi*np.random.random()
+        # Really a hack, but make sure that we end up with a particle that
+        # is within the desired dimensions
+        not_found = True
+        counter = 0
+        while not_found and counter < max_tries:
 
-        # calculate x and y
-        x = np.cos(theta)*r
-        y = np.sin(theta)*r
+            # Grab a random theta
+            theta = 2*np.pi*np.random.random()
 
-        return np.array(x,y)
+            # calculate x and y
+            x = self._center_coord[0] + np.cos(theta)*r
+            y = self._center_coord[1] + np.sin(theta)*r
+
+            if x > 0 and x < self._dimensions[0] and y > 0 and y < self._dimensions[1]:
+                not_found = False
+
+            counter += 1
+
+        if not_found:
+            return np.array((np.nan,np.nan))
+
+        return np.array((x,y))
 
     def get_forces(self,coord,particle_charge=1.0):
 
@@ -72,9 +86,9 @@ class Radial(Potential):
         # To avoid an explosion in potential, the shortest possible distnace
         # is set to min_r
         force_r = r
-        if force_r < self._r_min:
-            force_r = self._r_min
-        force_in_r = -self._pot_mag*particle_charge*(1/force_r**2)
+        if force_r < self._min_r:
+            force_r = self._min_r
+        force_in_r = self._pot_mag*particle_charge*(1/force_r**2)
 
         # Fx = Fr*x/r (similar triangle), Fy = Fr*y/r.  Signs shake out
         # by coord - center_coord.

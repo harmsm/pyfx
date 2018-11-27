@@ -10,9 +10,9 @@ class Particle:
     characteristics: radius, mass and charge.  It
     """
 
-    def __init__(self,x,y,radius=1.0,charge=1.0,kT=1.0,mass=None):
+    def __init__(self,coord,radius=1.0,charge=1.0,kT=1.0,mass=None):
 
-        self._coord = np.array((x,y),dtype=np.float)
+        self._coord = np.array(coord,dtype=np.float)
         self._radius = radius
         self._charge = charge
         self._kT = kT
@@ -26,6 +26,8 @@ class Particle:
 
         if forces is None:
             self._forces = np.array((0.0,0.0),dtype=np.float)
+        else:
+            self._forces = np.copy(forces)
 
         # dt is defined as 1
         self._accel = self._forces/self._mass

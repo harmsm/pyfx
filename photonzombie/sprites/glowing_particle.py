@@ -56,7 +56,7 @@ class GlowingParticle(Sprite):
             raise ValueError(err)
         self._alpha_decay = alpha_decay
 
-        super(self).__init__(self)
+        super().__init__(self)
 
     def _build_sprite(self):
         """

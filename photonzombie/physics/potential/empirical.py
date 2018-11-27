@@ -11,7 +11,7 @@ class Empirical(Potential):
 
         self._dimensions = np.copy(obs_potential.shape)
 
-        super(self).__init__(kT)
+        super().__init__(kT)
 
         self._x_grid = np.array(range(self._dimensions[0]),dtype=np.int)
         self._y_grid = np.array(range(self._dimensions[1]),dtype=np.int)

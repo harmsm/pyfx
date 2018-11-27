@@ -56,13 +56,14 @@ class GlowingParticles:
 
             # Generate x,y coordinates for the particle
             if len(self.potentials) > 0 and use_potential >= 0:
-                x, y = self.potentials[use_potential].sample_coord()
+                coord = self.potentials[use_potential].sample_coord()
             else:
                 x = np.random.choice(range(self._dimensions[0]))
                 y = np.random.choice(range(self._dimensions[1]))
+                coord = np.array((x,y))
 
             # Generate a physical particle and sprite
-            p = physics.Particle(x,y,radius=radius)
+            p = physics.Particle(coord,radius=radius)
             sprite = sprites.GlowingParticle(radius,intensity,self._hue)
 
             self._particles.append((p,sprite))
