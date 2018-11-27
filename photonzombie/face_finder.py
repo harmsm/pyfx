@@ -102,19 +102,44 @@ class FaceStack:
 
         return False
 
-    def get_centroid(self,landmark,fill_gaps=True):
-        """
-        Return the centroid of a landmark as a function of time.  Returns
-        two arrays: time (1D), xy_coord of centroid (2D).
-        """
+    def _get_landmark_indexes(self,landmark):
 
-        # Make sure the landmark is valid
         try:
             i, j = self._landmark_indexes[landmark]
         except KeyError:
             err = "landmark {} not recognized. Landmark should be one of:\n\n".format(landmark)
             err += ",".join(self.available_landmarks)
             raise ValueError(err)
+
+        return i, j
+
+
+    def get_landmark(self,landmark):
+        """
+        Return the coordinates of the landmark as a functino of time.
+        Returns a 1D numpy array for time and a python list of 2D arrays
+        representing the xy coordinates of the landmark at that time.
+        """
+
+        i, j = self._get_landmark_indexes(landmark)
+
+        t = []
+        out = []
+        for k, coord in enumerate(self._face_coord):
+
+            t.append(self._face_time[k])
+            out.append(coord[i:j])
+
+        return t, out
+
+
+    def get_centroid(self,landmark,fill_gaps=True):
+        """
+        Return the centroid of a landmark as a function of time.  Returns
+        two arrays: time (1D), xy_coord of centroid (2D).
+        """
+
+        i, j = self._get_landmark_indexes(landmark)
 
         # Get centroid over time
         t = []
@@ -163,13 +188,7 @@ class FaceStack:
         The mask would now have the polygon of the first time point.
         """
 
-        # Make sure the landmark is valid
-        try:
-            i, j = self._landmark_indexes[landmark]
-        except KeyError:
-            err = "landmark {} not recognized. Landmark should be one of:\n\n".format(landmark)
-            err += ",".join(self.available_landmarks)
-            raise ValueError(err)
+        i, j = self._get_landmark_indexes(landmark)
 
         # Get hull over time
         t = []
@@ -200,16 +219,28 @@ class FaceStack:
     @property
     def time_visible(self):
 
-        return self._face_time[-1] - self._face_time[0]
+        return self._face_time[-1] - self._face_time[0] + 1
 
 def find_face_stacks(img_list,
+                     training_data,
                      max_time_gap=5,
                      p_cutoff=0.9,
                      real_cutoff=100,
                      min_time_visible=5):
     """
-    Return a list of FaceStack instances extracted from
+    Return a list of FaceStack instances extracted from a series of images.
 
+    img_list: list of single-channel images or list of image files
+    training_data: file containing dlib training data for finding faces
+    max_time_gap: maximum time over which two similar faces are considered
+                  the same without observing the face at intermediate times
+    p_cutoff: minimum probability at which two faces are considered the same
+              when comparing a newly found face to a collection of previously
+              identified faces.
+    real_cutoff: maximum Euclidian distance between two faces for which they
+                 are considered the same
+    min_time_visible: do not return any face stacks in which the minimum time
+                      seen is less than min_time_visible.
     """
 
     # Create detector for finding face features
@@ -227,9 +258,11 @@ def find_face_stacks(img_list,
 
         # Look for faces in this image
         new_faces = detector.detect(img)
+        if len(new_faces) == 0:
+            continue
 
         # If no faces have been seen yet, append these and continue
-        if len(faces_seen) = 0:
+        if len(faces_seen) == 0:
             for nf in new_faces:
                 faces_seen.append(FaceStack(nf,t))
             continue
@@ -242,9 +275,9 @@ def find_face_stacks(img_list,
                 face_dist[-1].append(fs.get_dist(nf))
         face_dist = np.array(face_dist)
 
-        # These are RMSD distnaces; convert to likelihoods and then weights
-        face_score = 2*np.exp(face_dist**2)
-        face_score = face_score/np.sum(face_score,1)
+        # These are RMSD distances; convert to likelihoods and then weights
+        face_score = 2*np.exp(-(face_dist))
+        face_score = face_score/np.sum(face_score,0)
 
         # Assign new faces to old faces
         for i in range(len(new_faces)):
@@ -256,7 +289,7 @@ def find_face_stacks(img_list,
 
                 # If the new face is close to the previous face in absolute
                 # terms ...
-                j = np.argmax(face_score,i)
+                j = np.argmax(face_score,i)[0]
                 if face_dist[i,j] < real_cutoff:
 
                     # The new face is actually one of the previously assigned
@@ -270,7 +303,7 @@ def find_face_stacks(img_list,
 
         # Look for faces that have not been seen for awhile and stop
         # considering them as possible matches
-        for i in rage(len(faces_seen)-1,-1,-1):
+        for i in range(len(faces_seen)-1,-1,-1):
             if not faces_seen[i].check_freshness(t):
                 stale_faces.append(faces_seen.pop(i))
 
