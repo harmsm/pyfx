@@ -22,7 +22,7 @@ class Uniform(Potential):
         Load in a new potential.
         """
 
-        self._force_vector = force_vector
+        self._force_vector = np.array(force_vector)
 
     def sample_coord(self):
         """
@@ -33,7 +33,7 @@ class Uniform(Potential):
         x_coord = np.random.choice(range(self._dimensions[0]))
         y_coord = np.random.choice(range(self._dimensions[1]))
 
-        return np.arary((x_coord, y_coord))
+        return np.array((x_coord, y_coord))
 
     def get_energy(self,coord):
 

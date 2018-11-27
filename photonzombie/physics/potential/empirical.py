@@ -47,7 +47,7 @@ class Empirical(Potential):
         y_coord = np.mod(position,self._w.shape[1])
         x_coord = np.int((position - y_coord)/self._w.shape[1])
 
-        return x_coord, y_coord
+        return np.arary((x_coord, y_coord))
 
     def get_energy(self,coord):
 
