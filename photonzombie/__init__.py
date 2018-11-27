@@ -1,6 +1,6 @@
 
 from .background import Background
-from .color_shifter import ColorShifter
-from .face_finder import FaceFinder
+from .physics import ColorShifter
+from .face_finder import find_face_stacks
 from . import filter
 from .glowing_particles import GlowingParticles

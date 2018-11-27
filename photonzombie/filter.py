@@ -12,18 +12,18 @@ def create_halo(bw_array,
 
     The halo is calculated by taking dark areas in the image and eroding them
     to make them larger.  This is done num_apply times.  Each time this is
-    done, the expanded region is multiplied by a scalar and added to the 
-    output.  The scalar is multipled by decay_scalar after each replicate, 
-    meaning that pixels added to the region by later erosion steps have 
+    done, the expanded region is multiplied by a scalar and added to the
+    output.  The scalar is multipled by decay_scalar after each replicate,
+    meaning that pixels added to the region by later erosion steps have
     lower weights than those added later.  This causes the halo to fall off
-    in intensity.  
+    in intensity.
 
     The morphological element controlling the erosion is a disk of
-    halo_size.  
+    halo_size.
 
     The function returns an array with values between 0 and 1, where one is
     the center of the halo (e.g. high alpha) and 0 is past the edge of the halo
-    (e.g. low alpha). 
+    (e.g. low alpha).
     """
 
     out = np.zeros(bw_array.shape,dtype=np.float)
@@ -37,7 +37,7 @@ def create_halo(bw_array,
 
         out = out + array_eroded*scalar
         scalar = scalar*decay_scalar
- 
+
     # Normalize array
     out = 1 - out/np.max(out)
 
@@ -56,6 +56,6 @@ def ghostify(bw_array,diff_array,hue=0.5,total_alpha=0.8):
     ghost[:,:,0] = ghost_pixels*rgb[0]
     ghost[:,:,1] = ghost_pixels*rgb[1]
     ghost[:,:,2] = ghost_pixels*rgb[2]
-    ghost[:,:,3] = (1 - diff_array)*total_alpha
+    ghost[:,:,3] = diff_array*total_alpha
 
     return ghost
