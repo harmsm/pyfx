@@ -1,6 +1,10 @@
 
 from .base import Sprite
 
+import matplotlib
+import numpy as np
+from skimage import draw
+
 class GlowingParticle(Sprite):
 
     def __init__(self,
@@ -56,7 +60,7 @@ class GlowingParticle(Sprite):
             raise ValueError(err)
         self._alpha_decay = alpha_decay
 
-        super().__init__(self)
+        super().__init__()
 
     def _build_sprite(self):
         """

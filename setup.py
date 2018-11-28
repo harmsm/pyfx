@@ -13,7 +13,7 @@ from setuptools import setup, find_packages
 setup(name='pyfx',
       packages=find_packages(),
       version='0.1',
-      description="Python software package for algorithmically generating movie effects",
+      description="Python software package for algorithmically generating video effects",
       long_description=open("README.md").read(),
       author='Michael J. Harms',
       author_email='harmsm@gmail.com',
