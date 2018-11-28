@@ -44,4 +44,4 @@ class Random(Potential):
         Return random force.
         """
 
-        return np.random.normal(0,force_sd,2)
+        return np.random.normal(0,self._force_sd,2)

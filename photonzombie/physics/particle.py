@@ -4,19 +4,21 @@ import numpy as np
 class Particle:
     """
     Generic particle.  The particle is defined by three intrinsic
-    characteristics: radius, mass and charge.  It
+    characteristics: radius, mass and charge.  It has two main coordinates:
+    x,y coordinates; x,y velocities.
     """
 
-    def __init__(self,coord,radius=1.0,charge=1.0,kT=1.0,mass=None):
+    def __init__(self,coord=(0.0,0.0),velocity=(0.0,0.0),
+                 radius=1.0,charge=1.0,mass=None):
 
         self._coord = np.array(coord,dtype=np.float)
+        self._velocity = np.array(velocity,dtype=np.float)
         self._radius = radius
         self._charge = charge
-        self._kT = kT
 
         if mass is None:
             self._mass = 4/3*np.pi*(self._radius**3)
-        self._velocity = np.random.normal(0,2*self._kT,2)
+
         self._forces = np.array((0,0),dtype=np.float)
 
     def advance_time(self,forces=None,dt=1.0):
@@ -36,18 +38,38 @@ class Particle:
     def radius(self):
         return self._radius
 
+    @radius.setter
+    def radius(self,radius):
+        self._radius = radius
+
     @property
     def mass(self):
         return self._mass
+
+    @mass.setter
+    def mass(self,mass):
+        self._mass = mass
 
     @property
     def charge(self):
         return self._charge
 
+    @charge.setter
+    def charge(self,charge):
+        self._charge = charge
+
     @property
     def coord(self):
         return self._coord
 
+    @coord.setter
+    def coord(self,coord):
+        self._coord = np.array(coord)
+
     @property
     def velocity(self):
         return self._velocity
+
+    @velocity.setter
+    def velocity(self,velocity):
+        self._velocity = np.array(velocity)

@@ -2,6 +2,8 @@
 from . import physics
 from . import sprites
 
+import numpy as np
+
 class GlowingParticles:
     """
     """
@@ -9,6 +11,7 @@ class GlowingParticles:
     def __init__(self,
                  hue=0.5,
                  dimensions=(1080,1920),
+                 velocity_sd=1.0,
                  radius_pareto=1.0,
                  radius_max=100,
                  intensity_pareto=1.0,
@@ -16,6 +19,7 @@ class GlowingParticles:
 
         self._hue = hue
         self._dimensions = np.array(dimensions,dtype=np.int)
+        self._velocity_sd = velocity_sd
         self._radius_pareto = radius_pareto
         self._radius_max = radius_max
         self._intensity_pareto = intensity_pareto
@@ -62,8 +66,11 @@ class GlowingParticles:
                 y = np.random.choice(range(self._dimensions[1]))
                 coord = np.array((x,y))
 
+            # Generate random velocity (sampling from a normal distribution)
+            velocity = np.random.normal(0,self._velocity_sd,2)
+
             # Generate a physical particle and sprite
-            p = physics.Particle(coord,radius=radius)
+            p = physics.Particle(coord,velocity=velocity,radius=radius)
             sprite = sprites.GlowingParticle(radius,intensity,self._hue)
 
             self._particles.append((p,sprite))
