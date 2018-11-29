@@ -31,11 +31,13 @@ class Empirical(Potential):
 
         if obs_potential is not None:
             self._obs_potential = obs_potential
-            self._potential = interpolate.RectBivariateSpline(x,y,pot)
+            self._potential = interpolate.RectBivariateSpline(self._x_grid,
+                                                              self._y_grid,
+                                                              self._obs_potential)
 
-        self._w = np.exp(-self._potential/self._kT)
-        self._p = np.ravel(self._w)/np.sum(self._w)
-        self._p_indexes = np.array(range(len(self._p)),dtype=np.int)
+        self._w = None
+        self._p = None
+        self._p_indexes = None
 
     def sample_coord(self):
         """
@@ -43,11 +45,18 @@ class Empirical(Potential):
         potential surface.
         """
 
+        # The weights have not been calculated for this potential -- calculate
+        # them. 
+        if self._w is None:
+            self._w = np.exp(-self._obs_potential/self._kT)
+            self._p = np.ravel(self._w)/np.sum(self._w)
+            self._p_indexes = np.array(range(len(self._p)),dtype=np.int)
+
         position = np.random.choice(self._p_indexes,p=self._p)
         y_coord = np.mod(position,self._w.shape[1])
         x_coord = np.int((position - y_coord)/self._w.shape[1])
 
-        return np.arary((x_coord, y_coord))
+        return np.array((x_coord, y_coord))
 
     def get_energy(self,coord):
 
@@ -61,4 +70,4 @@ class Empirical(Potential):
         Fx = -self._potential(coord[0],coord[1],dx=1)
         Fy = -self._potential(coord[0],coord[1],dy=1)
 
-        return np.array((Fx,Fy))
+        return np.array(np.array((Fx[0,0],Fy[0,0])))

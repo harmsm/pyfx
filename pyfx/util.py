@@ -1,10 +1,30 @@
+__description__ = \
+"""
+Utility functions for converting between data types, doing sanity checking
+along the way.
+
+Enforces these rules:
+    1. Images can only be 1, 3, or 4 channel
+    2. Float arrays must have values between 0 and 1
+    3. Integer arrays must have values between 0 and 255
+
+If an alpha channel is generated, it will be filled with a value of 1.0 (float)
+or 255 (integer).
+"""
 
 import numpy as np
 from PIL import Image
+from skimage import color
 
-INT_TYPES = (np.int8,np.int16,np.int32,np.int64,np.uint8,np.uint16,np.uint32,np.uint64)
+INT_TYPES = (np.int,np.intc,np.intp,np.int8,np.int16,np.int32,np.int64,
+             np.uint8,np.uint16,np.uint32,np.uint64)
 
-def matrix_to_image(a):
+FLOAT_TYPES = (np.float,np.float16,np.float32,np.float64)
+
+def array_to_image(a):
+    """
+    Convert an array to an RGBA PIL.Image.
+    """
 
     if len(a.shape) == 2:
         duplicate_channels = True
@@ -59,25 +79,151 @@ def matrix_to_image(a):
 
     return a_img
 
+def image_to_array(img,dtype=np.uint8,num_channels=4):
+    """
+    Convert a PIL.Image instance to an array (in a defined way).
+    """
+
+    # sanity check
+    if num_channels not in (1,3,4):
+        err = "number of channels must be 1, 3, or 4\n"
+        raise ValueError(err)
+
+    # convert to an array
+    a = np.array(img,dtype=dtype)
+
+    # If non integer type, place on 0-1 scale
+    max_possible_value = 255
+    if a.dtype not in INT_TYPES:
+        if a.dtype != np.bool:
+            max_possible_value = 1.0
+            a = a/255
+
+    out = np.zeros((a.shape[0],a.shape[1],num_channels),dtype=dtype)
+
+    # 1 input channel
+    if len(a.shape) == 2:
+
+        # ... to 1 output channel
+        if num_channels == 1:
+            out = a
+
+        # ... to 3 or 4 output channels
+        else:
+            out[:,:,:3] = a[:,:3]
+            if num_channels == 4:
+                out[:,:,3] = max_possible_value
+
+    # 3 or 4 input channels (or 1 channel loaded into a 3rd array dimension)
+    elif len(a.shape) == 3:
+
+        # ... to 1 output channel
+        if num_channels == 1:
+            bw = color.rgb2gray(a)
+            if dtype in INT_TYPES:
+                out = np.array(np.round(bw*255,0),dtype=dtype)
+            else:
+                out = np.array(bw,dtype=dtype)
+
+        # ... to 3 output channels
+        elif num_channels == 3:
+
+            # 1 to 3
+            if a.shape[2] == 1:
+                out[:,:,0] = a[:,:,0]
+                out[:,:,1] = a[:,:,0]
+                out[:,:,2] = a[:,:,0]
+
+            # 3 to 3
+            elif a.shape[2] == 3:
+                out = a
+
+            # 4 to 3
+            elif a.shape[2] == 4:
+                out[:,:,:3] = a[:,:,:3]
+            else:
+                err = "matrix must have 1,3 or 4 many channels\n"
+                raise ValueError(err)
+
+        # ... to 4 output channels
+        elif num_channels == 4:
+
+            # 1 to 4
+            if a.shape[2] == 1:
+                out[:,:,0] = a[:,:,0]
+                out[:,:,1] = a[:,:,0]
+                out[:,:,2] = a[:,:,0]
+                out[:,:,3] = max_possible_value
+
+            # 3 to 4
+            if a.shape[2] == 3:
+                out[:,:,:3] = a[:,:,:3]
+                out[:,:,3] = max_possible_value
+
+            # 4 to 4
+            elif a.shape[2] == 4:
+                out = a
+            else:
+                err = "matrix must have 1,3 or 4 many channels\n"
+                raise ValueError(err)
+
+    return out
+
+def float_to_int(a,out_dtype=np.uint8):
+    """
+    Convert a float array to an integer array.
+    """
+
+    if np.min(a) < 0 or np.max(a) > 1:
+        err = "float array must have values between 0 and 1\n"
+        raise ValueError(err)
+
+    if out_dtype not in INT_TYPES:
+        err = "out_dtype {} is not an integer type\n".format(out_dtype)
+        raise ValueError(err)
+
+    out = np.array(np.round(a*255,0),dtype=out_dtype)
+
+    return out
+
+
+def int_to_float(a,dtype=np.float):
+    """
+    Convert an integer array to a float array.
+    """
+
+    if np.min(a) < 0 or np.max(a) > 255:
+        err = "int array must have values between 0 and 255\n"
+        raise ValueError(err)
+
+    if out_dtype not in FLOAT_TYPES:
+        err = "out_dtype {} is not an float type\n".format(out_dtype)
+        raise ValueError(err)
+
+    out = np.array(a/255,dtype=out_dtype)
+
+    return out
+
 
 def alpha_composite(bottom,top,return_matrix_as_pil=False):
     """
-    Place image "top" over image "bottom" using alpha compositing.
+    Place image "top" over image "bottom" using alpha compositing.  If
+    return_matrix_as_pil is True, return as a PIL.Image instance.
     """
 
     # Convert "a" to a PIL Image (if necessary)
-    if type(a) == Image.Image:
+    if type(bottom) == Image.Image:
         bottom_img = bottom
         return_as_image = True
     else:
-        bottom_img = matrix_to_image(bottom)
+        bottom_img = array_to_image(bottom)
         return_as_image = return_matrix_as_pil
 
     # Convert "b" to a PIL Image (if necessary)
     if type(top) == Image.Image:
         top_img = top
     else:
-        top_img = matrix_to_image(top)
+        top_img = array_to_image(top)
 
     # Sanity checks
     if top_img.mode != 'RGBA' or bottom_img.mode != 'RGBA':

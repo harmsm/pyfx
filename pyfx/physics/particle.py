@@ -9,15 +9,15 @@ class Particle:
     """
 
     def __init__(self,coord=(0.0,0.0),velocity=(0.0,0.0),
-                 radius=1.0,charge=1.0,mass=None):
+                 radius=1.0,charge=1.0,density=1.0):
 
         self._coord = np.array(coord,dtype=np.float)
         self._velocity = np.array(velocity,dtype=np.float)
         self._radius = radius
         self._charge = charge
+        self._density = density
 
-        if mass is None:
-            self._mass = 4/3*np.pi*(self._radius**3)
+        self._mass = 4/3*np.pi*(self._radius**3)*self._density
 
         self._forces = np.array((0,0),dtype=np.float)
 
@@ -43,12 +43,16 @@ class Particle:
         self._radius = radius
 
     @property
+    def density(self):
+        return self._density
+
+    @density.setter
+    def density(self,density):
+        self._density = density
+
+    @property
     def mass(self):
         return self._mass
-
-    @mass.setter
-    def mass(self,mass):
-        self._mass = mass
 
     @property
     def charge(self):

@@ -102,3 +102,59 @@ class GlowingParticle(Sprite):
         self._sprite = np.zeros((img.shape[0],img.shape[1],4),dtype=np.uint8)
         self._sprite[:,:,:3] = 255*matplotlib.colors.hsv_to_rgb(col)
         self._sprite[:,:,3] = self._alpha*255*img
+
+    @property
+    def radius(self):
+        return self._radius
+
+    @radius.setter
+    def radius(self,radius):
+
+        if radius <= 0:
+            err = "radius must be larger than zero\n"
+            raise ValueError(err)
+
+        self._radius = radius
+        self._build_sprite()
+
+    @property
+    def intensity(self):
+        return self._intensity
+
+    @intensity.setter
+    def intensity(self,intensity):
+
+        if intensity < 0 or intensity > 1:
+            err = "intensity must be between 0 and 1\n"
+            raise ValueError(err)
+
+        self._intensity = intensity
+        self._build_sprite()
+
+    @property
+    def hue(self):
+        return self._hue
+
+    @hue.setter
+    def hue(self,hue):
+
+        if hue < 0 or hue > 1:
+            err = "hue must be between 0 and 1\n"
+            raise ValueError(err)
+
+        self._hue = hue
+        self._build_sprite()
+
+    @property
+    def alpha(self):
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self,alpha):
+
+        if alpha < 0 or alpha > 1:
+            err = "alpha must be between 0 and 1\n"
+            raise ValueError(err)
+
+        self._alpha = alpha
+        self._build_sprite()
