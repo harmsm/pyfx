@@ -79,38 +79,8 @@ class Sprite:
                 return img_matrix
             y_max = img_matrix.shape[1]
 
-        # Update output matrix with the new output
-        #new_alpha = np.zeros((x_max-x_min,y_max-y_min),dtype=np.uint16)
-        #new_alpha[:,:] += img_matrix[x_min:x_max,y_min:y_max,3]
-        #new_alpha[:,:] += self.sprite[i_min:i_max,j_min:j_max,3]
-        #new_alpha[new_alpha>255] = 255
-
         a = alpha_composite(img_matrix[x_min:x_max,y_min:y_max,:],
                             self.sprite[i_min:i_max,j_min:j_max,:])
-
-
-        img_matrix[x_min:x_max,y_min:y_max,:] = a
-
-
-
-        """
-        a = out[x_min:x_max,y_min:y_max,:3]
-        b = self.sprite[i_min:i_max,j_min:j_max,:3]
-        c = a + b*(255 - a)
-
-
-
-
-        out = np.zeros(img_matrix.shape,dtype=np.uint16)
-        out[:,:,:3] = img_matrix[:,:,:3]
-        out[x_min:x_max,y_min:y_max,:3] += self.sprite[i_min:i_max,j_min:j_max,:3]
-
-
-
-        out[out>255] = 255
-
-        img_matrix[:,:,:] = out
-        """
 
         return img_matrix
 

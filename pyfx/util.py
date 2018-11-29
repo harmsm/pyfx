@@ -205,6 +205,25 @@ def int_to_float(a,dtype=np.float):
     return out
 
 
+def load_image_file(image_file,dtype=np.uint8,num_channels=4,return_array=True):
+    """
+    Load an image file.
+
+    image_file: some sort of image file.
+    dtype: output data type
+    num_channels: number of output channels
+    return_array: return an array (True) or PIL Image class (False)
+    """
+
+
+    img = Image.open(image_file)
+
+    if return_array:
+        return image_to_array(img,dtype=dtype,num_channels=num_channels)
+
+    return img
+
+
 def alpha_composite(bottom,top,return_matrix_as_pil=False):
     """
     Place image "top" over image "bottom" using alpha compositing.  If
