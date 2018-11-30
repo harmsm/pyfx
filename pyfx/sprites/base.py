@@ -82,7 +82,10 @@ class Sprite:
         a = alpha_composite(img_matrix[x_min:x_max,y_min:y_max,:],
                             self.sprite[i_min:i_max,j_min:j_max,:])
 
+        img_matrix[x_min:x_max,y_min:y_max] = a[:,:]
+
         return img_matrix
+
 
     @property
     def sprite(self):

@@ -243,7 +243,7 @@ def alpha_composite(bottom,top,return_matrix_as_pil=False):
         top_img = top
     else:
         top_img = array_to_image(top)
-
+        
     # Sanity checks
     if top_img.mode != 'RGBA' or bottom_img.mode != 'RGBA':
         err = "top and bottom must have alpha channels for compositing\n"

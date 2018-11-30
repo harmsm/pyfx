@@ -18,4 +18,8 @@ It currently has a few features:
 + A class that identifies foreground pixels.
 + Some styling to create ghost and halo effects.  
 
+Design choices:
++ Arrays are enforced to be of only a few types:
+    +
+
 The API is pretty rough at this point.  Expect changes.

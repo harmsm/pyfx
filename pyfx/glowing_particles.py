@@ -113,7 +113,6 @@ class GlowingParticles:
         out_array = np.zeros((self._dimensions[0],self._dimensions[1],4),
                               dtype=np.uint8)
         for p in self._particles:
-            #coord = np.array((p[0].coord[1],p[0].coord[0]))
             out_array = p[1].write_to_image(p[0]._coord,out_array)
 
         return out_array
