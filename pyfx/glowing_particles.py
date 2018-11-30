@@ -62,8 +62,8 @@ class GlowingParticles:
                                num_equilibrate steps
         """
 
-        for i in range(self._num_particles,-1,-1):
-            if self._particles[i][1].out_of_fame:
+        for i in range(self._num_particles-1,-1,-1):
+            if self._particles[i][1].out_of_frame:
 
                 if replace:
                     self._particles[i] = self._generate_random_particle(use_potential,
