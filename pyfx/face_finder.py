@@ -136,7 +136,12 @@ class FaceStack:
     def get_centroid(self,landmark,fill_gaps=True):
         """
         Return the centroid of a landmark as a function of time.  Returns
-        two arrays: time (1D), xy_coord of centroid (2D).
+        two arrays: time (1D), xyr_coord of centroid (2D) where x is x
+        coordinate, y is y coordinate, and r is the average distance of each
+        point in the landmark from the centroid.
+
+        landmark: what landmark to retrieve
+        fill_gap (bool): fill gaps where this feature was not seen by interpolation
         """
 
         i, j = self._get_landmark_indexes(landmark)
@@ -145,6 +150,7 @@ class FaceStack:
         t = []
         mean_x = []
         mean_y = []
+        mean_r = []
         for k, coord in enumerate(self._face_coord):
 
             t.append(self._face_time[k])
@@ -153,23 +159,30 @@ class FaceStack:
             mean_x.append(np.mean(landmark_coord[:,0]))
             mean_y.append(np.mean(landmark_coord[:,1]))
 
+            r = np.sqrt((mean_x[-1] - landmark_coord[:,0])**2 +
+                        (mean_y[-1] - landmark_coord[:,1])**2)
+            mean_r.append(np.mean(r))
+
         # Interpolate
         if fill_gaps:
 
             fx = interpolate.interp1d(np.array(t),np.array(mean_x),kind='cubic')
             fy = interpolate.interp1d(np.array(t),np.array(mean_y),kind='cubic')
+            fr = interpolate.interp1d(np.array(t),np.array(mean_r),kind='cubic')
 
             out_t = np.array(range(min(t),max(t)+1),dtype=np.uint8)
             out_x = fx(out_t)
             out_y = fy(out_t)
+            out_r = fr(out_t)
 
         else:
             out_t = np.array(t)
             out_x = np.array(mean_x)
             out_y = np.array(mean_y)
+            out_r = np.array(mean_r)
 
         # Construct output
-        out_coord = np.dstack((out_x,out_y))
+        out_coord = np.dstack((out_x,out_y,out_r))
 
         return out_t, out_coord
 

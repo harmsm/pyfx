@@ -3,7 +3,7 @@ from .base import Sprite
 
 import matplotlib
 import numpy as np
-from skimage import draw
+from skimage import draw, filters
 
 class GlowingParticle(Sprite):
 
@@ -86,6 +86,9 @@ class GlowingParticle(Sprite):
             alpha = alpha*self._alpha_decay
             radius = int(round(radius*self._expansion_factor))
 
+        # Blur
+        img = filters.gaussian(img,sigma=self._radius)
+
         # Normalize the array so it ranges from 0 to 1
         img = img/np.max(img)*self._intensity
 
@@ -114,8 +117,9 @@ class GlowingParticle(Sprite):
             err = "radius must be larger than zero\n"
             raise ValueError(err)
 
-        self._radius = radius
-        self._build_sprite()
+        if self._radius != radius:
+            self._radius = radius
+            self._build_sprite()
 
     @property
     def intensity(self):

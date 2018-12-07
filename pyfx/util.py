@@ -205,7 +205,7 @@ def int_to_float(a,dtype=np.float):
     return out
 
 
-def load_image_file(image_file,dtype=np.uint8,num_channels=4,return_array=True):
+def from_file(image_file,dtype=np.uint8,num_channels=4,return_array=True):
     """
     Load an image file.
 
@@ -222,6 +222,19 @@ def load_image_file(image_file,dtype=np.uint8,num_channels=4,return_array=True):
         return image_to_array(img,dtype=dtype,num_channels=num_channels)
 
     return img
+
+def to_file(image,image_file):
+    """
+    Write an image to a file.
+
+    image: Image or array instance.
+    image_file: output file
+    """
+
+    if type(image) != Image.Image:
+        image = array_to_image(image)
+
+    image.save(image_file)
 
 
 def alpha_composite(bottom,top,return_matrix_as_pil=False):
@@ -243,7 +256,7 @@ def alpha_composite(bottom,top,return_matrix_as_pil=False):
         top_img = top
     else:
         top_img = array_to_image(top)
-        
+
     # Sanity checks
     if top_img.mode != 'RGBA' or bottom_img.mode != 'RGBA':
         err = "top and bottom must have alpha channels for compositing\n"

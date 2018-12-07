@@ -23,3 +23,44 @@ Design choices:
     +
 
 The API is pretty rough at this point.  Expect changes.
+
+
+
+
+
+
+
+## Complicated demo
+
+1. Create a workspace, assigning a background frame and associated images
+
+   ```python
+   import pyfx
+   ws = pyfx.create_workspace(name,img_list,bg_image)
+   ```
+
+2. Precalculate stuff
+
+   ```python
+   pyfx.processors.find_faces(ws)
+   pyfx.processors.diff_potentials(ws)
+   ```
+
+3. Add custom particle potentials
+
+   ```python
+   gradient = pyfx.potential_from_img(gradient_img_file)
+   pyfx.add_potential(ws,gradient,start=10)
+   ```
+
+4. Add effects layers
+
+   ```python
+   pyfx.effects.photonzombie(ws,particles=200)
+   ```
+
+5. Render
+
+   ```python
+   ws.render(out_file)
+   ```
