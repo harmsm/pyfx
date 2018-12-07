@@ -1,6 +1,4 @@
 
-
-
 class GlowingEyes:
 
     def __init__(self,face_stacks_pickle):
@@ -37,12 +35,23 @@ class GlowingEyes:
                 except KeyError:
                     self._left_eye_coord[lt[i]] = [to_write]
 
-
-
     def write_eyes(self,frame_number,img_to_write):
         """
         Write glowing eyes for this frame number (if there are any) to
         img_to_write.
         """
 
-        pass
+        try:
+            left_eye = self._left_eye_coord[frame_number]
+            radius = left_eye[2]
+
+
+            self._eye_sprite.radius = left_eye[2]
+
+        except KeyError:
+            pass
+
+        try:
+            right_eye = self._right_eye_coord[frame_number]
+        except KeyError:
+            pass
