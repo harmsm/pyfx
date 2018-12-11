@@ -1,6 +1,145 @@
+__description__ = \
+"""
+Utility functions for cropping frames.
+"""
+__author__ = "Michael J. Harms"
+__date__ = "2018-12-10"
 
 import skimage
 import numpy as np
+
+def crop(img,x_crop=(0,0),y_crop=(0,0)):
+    """
+    Crop an image using the values in x_crop and y_crop.  x_crop specify
+    the number of pixels to be taken off the left/right and top/bottom
+    respectively. x_crop=(100,50) would take 100 pixels off the left and
+    50 pixels off the right of the img.
+
+    img: image matrix
+    x_crop: tuple of two positive ints; pixels to take off left and right
+    y_crop: tuple of two positive ints; pixels to take off top and bottom
+    """
+
+    if len(x_crop) != 2:
+        err = "x_crop must be a two-value tuple\n"
+        raise ValueError(err)
+
+    if len(y_crop) != 2:
+        err = "y_crop must be a two-value tuple\n"
+        raise ValueError(err)
+
+    if x_crop[0] < 0 or x_crop[1] < 0 or y_crop[0] < 0 or y_crop[1] < 0:
+        err = "crop values must be positive integers\n"
+        raise ValueError(err)
+
+    x_crop = tuple([int(round(c)) for c in x_crop])
+    y_crop = tuple([int(round(c)) for c in y_crop])
+
+    if len(img.shape) == 2:
+        crops = (x_crop,y_crop)
+    elif len(img.shape) == 3:
+        crops = (x_crop,y_crop,(0,0))
+    else:
+        err = "image matrix must be either 2 or 3 dimensional\n"
+        raise ValueError(err)
+
+    return skimage.util.crop(img,crops,copy=True)
+
+def expand(img,x_expand=None,y_expand=None):
+    """
+    Expand an image by dimensions in x_expand and y_expand. This is
+    done by mirroring the appropriate amount of the existing image,
+    thus making a seamless transition.  The syntax is basically an inverse
+    crop.
+
+    img: img as array
+    x_expand: tuple (left, right), where left and right are amount to
+              to add to left and right, in pixels
+    y_expand: tuple (top, bottom), where top and bottom are the amount
+              to add to the top and bottom in pixels"""
+
+
+    do_x_expansion = True
+    if x_expand is None:
+        x_expand = (0,1)
+        do_x_expansion = False
+
+    do_y_expansion = True
+    if y_expand is None:
+        y_expand = (0,1)
+        do_y_expansion = False
+
+    if img.shape[0] < x_expand[0] or img.shape[0] < x_expand[1]:
+        err = "cannot expand more than 2x in the x direction\n"
+        raise ValueError(err)
+
+    if img.shape[1] < y_expand[0] or img.shape[1] < y_expand[1]:
+        err = "cannot expand more than 2x in the y direction\n"
+        raise ValueError(err)
+
+    new_dim = [img.shape[0],img.shape[1]]
+    new_dim[0] = new_dim[0] + x_expand[0] + x_expand[1]
+    new_dim[1] = new_dim[1] + y_expand[0] + y_expand[1]
+
+    if len(img.shape) > 2:
+        out_array = np.zeros((new_dim[0],new_dim[1],img.shape[2]),dtype=img.dtype)
+    else:
+        out_array = np.zeros((new_dim[0],new_dim[1]),dtype=img.dtype)
+
+    out_array[x_expand[0]:-x_expand[1],y_expand[0]:-y_expand[1]] = img[:,:]
+
+    # Build strips on left and right
+    if do_x_expansion:
+        left_slice = img[:x_expand[0],:]
+        left_slice = np.flip(left_slice,0)
+        out_array[:x_expand[0] ,y_expand[0]:-y_expand[1]] = left_slice
+
+        right_slice = img[-x_expand[1]:,:]
+        right_slice = np.flip(right_slice,0)
+        out_array[-x_expand[1]:,y_expand[0]:-y_expand[1]] = right_slice
+
+    # Build strips on top and bottom
+    if do_y_expansion:
+        top_slice = img[:,:y_expand[0]]
+        top_slice = np.flip(top_slice,1)
+        out_array[x_expand[0]:-x_expand[1],:y_expand[0]] = top_slice
+
+        bottom_slice = img[:,-y_expand[1]:]
+        bottom_slice = np.flip(bottom_slice,1)
+        out_array[x_expand[0]:-x_expand[1],-y_expand[1]:] = bottom_slice
+
+    # If we built strips on top and bottom and left and right, fill in corners
+    if do_x_expansion and do_y_expansion:
+
+        top_left_a = left_slice[:,:y_expand[0]]
+        top_left_a = np.flip(top_left_a,1)
+        top_left_b =  top_slice[:x_expand[0],:]
+        top_left_b = np.flip(top_left_b,0)
+        top_left = alpha_composite(top_left_a,top_left_b)
+        out_array[:x_expand[0],  :y_expand[0],:] = top_left
+
+        top_right_a = right_slice[:,:y_expand[0]]
+        top_right_a = np.flip(top_right_a,1)
+        top_right_b =  top_slice[-x_expand[1]:,:]
+        top_right_b = np.flip(top_right_b,0)
+        top_right = alpha_composite(top_right_a,top_right_b)
+        out_array[-x_expand[1]:, :y_expand[0],:] = top_right
+
+        bottom_left_a = left_slice[:,-y_expand[1]:]
+        bottom_left_a = np.flip(bottom_left_a,1)
+        bottom_left_b =  bottom_slice[:x_expand[0],:]
+        bottom_left_b = np.flip(bottom_left_b,0)
+        bottom_left = alpha_composite(bottom_left_a,bottom_left_b)
+        out_array[:x_expand[0], -y_expand[1]:,:] = bottom_left
+
+        bottom_right_a = right_slice[:,-y_expand[1]:]
+        bottom_right_a = np.flip(bottom_right_a,1)
+        bottom_right_b =  bottom_slice[-x_expand[1]:,:]
+        bottom_right_b = np.flip(bottom_right_b,0)
+        bottom_right = alpha_composite(bottom_right_a,bottom_right_b)
+        out_array[-x_expand[1]:,-y_expand[1]:,:] = bottom_right
+
+    return out_array
 
 def find_pan_crop(self,x,y,width,height):
     """
@@ -139,136 +278,3 @@ def find_zoom_crop(self,magnitude,width,height):
     crop_y = (del_y/2,del_y/2)
 
     return crop_x, crop_y, width - del_x, height - del_y
-
-def crop(img,x_crop=(0,0),y_crop=(0,0)):
-    """
-    Crop an image using the values in x_crop and y_crop.  x_crop specify
-    the number of pixels to be taken off the left/right and top/bottom
-    respectively. x_crop=(100,50) would take 100 pixels off the left and
-    50 pixels off the right of the img.
-
-    img: image matrix
-    x_crop: tuple of two positive ints; pixels to take off left and right
-    y_crop: tuple of two positive ints; pixels to take off top and bottom
-    """
-
-    if len(x_crop) != 2:
-        err = "x_crop must be a two-value tuple\n"
-        raise ValueError(err)
-
-    if len(y_crop) != 2:
-        err = "y_crop must be a two-value tuple\n"
-        raise ValueError(err)
-
-    if x_crop[0] < 0 or x_crop[1] < 0 or y_crop[0] < 0 or y_crop[1] < 0:
-        err = "crop values must be positive integers\n"
-        raise ValueError(err)
-
-    x_crop = tuple([int(round(c)) for c in x_crop])
-    y_crop = tuple([int(round(c)) for c in y_crop])
-
-    if len(img.shape) == 2:
-        crops = (x_crop,y_crop)
-    elif len(img.shape) == 3:
-        crops = (x_crop,y_crop,(0,0))
-    else:
-        err = "image matrix must be either 2 or 3 dimensional\n"
-        raise ValueError(err)
-
-    return skimage.util.crop(img,crops,copy=True)
-
-def expand(img,x_expand=None,y_expand=None):
-    """
-    Expand an image by dimensions in x_expand and y_expand. This is
-    done by mirroring the appropriate amount of the existing image,
-    thus making a seamless transition.  The syntax is basically an inverse
-    crop.
-
-    img: img as array
-    x_expand: tuple (left, right), where left and right are amount to
-              to add to left and right, in pixels
-    y_expand: tuple (top, bottom), where top and bottom are the amount
-              to add to the top and bottom in pixels"""
-
-
-    do_x_expansion = True
-    if x_expand is None:
-        x_expand = (0,1)
-        do_x_expansion = False
-
-    do_y_expansion = True
-    if y_expand is None:
-        y_expand = (0,1)
-        do_y_expansion = False
-
-    if img.shape[0] < x_expand[0] or img.shape[0] < x_expand[1]:
-        err = "cannot expand more than 2x in the x direction\n"
-        raise ValueError(err)
-
-    if img.shape[1] < y_expand[0] or img.shape[1] < y_expand[1]:
-        err = "cannot expand more than 2x in the y direction\n"
-        raise ValueError(err)
-
-    new_dim = [img.shape[0],img.shape[1]]
-    new_dim[0] = new_dim[0] + x_expand[0] + x_expand[1]
-    new_dim[1] = new_dim[1] + y_expand[0] + y_expand[1]
-
-    if len(img.shape) > 2:
-        out_array = np.zeros((new_dim[0],new_dim[1],img.shape[2]),dtype=img.dtype)
-    else:
-        out_array = np.zeros((new_dim[0],new_dim[1]),dtype=img.dtype)
-
-    out_array[x_expand[0]:-x_expand[1],y_expand[0]:-y_expand[1]] = img[:,:]
-
-    # Build strips on left and right
-    if do_x_expansion:
-        left_slice = img[:x_expand[0],:]
-        left_slice = np.flip(left_slice,0)
-        out_array[:x_expand[0] ,y_expand[0]:-y_expand[1]] = left_slice
-
-        right_slice = img[-x_expand[1]:,:]
-        right_slice = np.flip(right_slice,0)
-        out_array[-x_expand[1]:,y_expand[0]:-y_expand[1]] = right_slice
-
-    # Build strips on top and bottom
-    if do_y_expansion:
-        top_slice = img[:,:y_expand[0]]
-        top_slice = np.flip(top_slice,1)
-        out_array[x_expand[0]:-x_expand[1],:y_expand[0]] = top_slice
-
-        bottom_slice = img[:,-y_expand[1]:]
-        bottom_slice = np.flip(bottom_slice,1)
-        out_array[x_expand[0]:-x_expand[1],-y_expand[1]:] = bottom_slice
-
-    # If we built strips on top and bottom and left and right, fill in corners
-    if do_x_expansion and do_y_expansion:
-
-        top_left_a = left_slice[:,:y_expand[0]]
-        top_left_a = np.flip(top_left_a,1)
-        top_left_b =  top_slice[:x_expand[0],:]
-        top_left_b = np.flip(top_left_b,0)
-        top_left = alpha_composite(top_left_a,top_left_b)
-        out_array[:x_expand[0],  :y_expand[0],:] = top_left
-
-        top_right_a = right_slice[:,:y_expand[0]]
-        top_right_a = np.flip(top_right_a,1)
-        top_right_b =  top_slice[-x_expand[1]:,:]
-        top_right_b = np.flip(top_right_b,0)
-        top_right = alpha_composite(top_right_a,top_right_b)
-        out_array[-x_expand[1]:, :y_expand[0],:] = top_right
-
-        bottom_left_a = left_slice[:,-y_expand[1]:]
-        bottom_left_a = np.flip(bottom_left_a,1)
-        bottom_left_b =  bottom_slice[:x_expand[0],:]
-        bottom_left_b = np.flip(bottom_left_b,0)
-        bottom_left = alpha_composite(bottom_left_a,bottom_left_b)
-        out_array[:x_expand[0], -y_expand[1]:,:] = bottom_left
-
-        bottom_right_a = right_slice[:,-y_expand[1]:]
-        bottom_right_a = np.flip(bottom_right_a,1)
-        bottom_right_b =  bottom_slice[-x_expand[1]:,:]
-        bottom_right_b = np.flip(bottom_right_b,0)
-        bottom_right = alpha_composite(bottom_right_a,bottom_right_b)
-        out_array[-x_expand[1]:,-y_expand[1]:,:] = bottom_right
-
-    return out_array
