@@ -1,24 +1,43 @@
-import numpy as np
-from scipy import interpolate
-import skimage
 import pyfx
+
+import numpy as np
+from scipy import interpolate, optimize
+import skimage
 
 import os
 
-def _objective(expand_factor,width,height,x,y,theta):
+def _calc_total_crop(self,x,y,theta,width,height):
+    """
+    Calculate the cropping that would result to make the x, y, and theta
+    moves specified given the height and width.
+    """
 
-    new_width = width*expand_factor
-    new_height = height*expand_factor
+    pan_crop_x, pan_crop_y, rotate_width, rotate_height = pyfx.util.crop.find_pan_crop(x,y,width,height)
 
-    total_crop = self._calc_total_crop(new_width,new_height,x,y,theta)
+    # Deal with rotation
+    rotate_crop_x, rotate_crop_y, final_width, final_height = pyfx.util.crop.find_rotate_crop(theta,rotate_width,rotate_height)
 
-    new_width = total_crop[4][0]
-    new_height = total_crop[4][1]
+    return pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, final_width, final_height
 
-    return (new_width - width) + (new_height - height)
+def _objective(expand_factor,x,y,theta,width,height):
+    """
+    Objective function that, when minimized, yields the expansion factor that
+    should be applied with the width and height so that camera moves remain
+    within the frame the whole time.
+    """
+
+    new_width = width*expand_factor[0]
+    new_height = height*expand_factor[0]
+
+    total_crop = _calc_total_crop(new_width,new_height,x,y,theta)
+
+    final_width = total_crop[4]
+    final_height = total_crop[5]
+
+    return (final_width - width) + (final_height - height)
 
 
-def build_shaking(self,shaking_magnitude,num_steps):
+def _build_shaking(self,shaking_magnitude,num_steps):
     """
     Build a shaking trajectory.  This makes the camera wander randomly
     over a harmonic potential centered at 0, simulating a wobbly camera
@@ -55,22 +74,9 @@ def build_shaking(self,shaking_magnitude,num_steps):
 
     return np.array(x), np.array(y)
 
-def calc_total_crop(self,width,height,x,y,theta):
-    """
-    Calculate the cropping that would result to make the x, y, and theta
-    moves specified given the height and width.
-    """
 
-    # Deal with panning
-    pan_wh = (width, height)
-    rotate_wh, pan_crop_x, pan_crop_y = find_pan_crop(x,y,pan_wh)
 
-    # Deal with rotation
-    final_wh, rotate_crop_x, rotate_crop_y = find_rotate_crop(theta,rotate_wh)
-
-    return pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, final_wh
-
-class VirtualCamera:
+class VirtualCamera(Effect):
     """
     Apply virtual pans, shakes, rotation, and zooming to frames.
     """
@@ -112,12 +118,12 @@ class VirtualCamera:
             os.mkdir(out_dir)
 
         # Load image as array
-        img = pyfx.util.from_file(img_list[0])
+        img = pyfx.util.convert.from_file(img_list[0])
 
         # Find dimensions of image
         height = img.shape[1]
         width = img.shape[0]
-    
+
         final_out_size = img.shape
 
         # Grab waypoints and sort according to time
@@ -167,24 +173,21 @@ class VirtualCamera:
         theta_interp = interpolate.interp1d(t,theta,kind=kind)
         theta = theta_interp(out_t)
 
-        # Calculate the pans we are going to use
-        total_crop = calc_total_crop(width,height,x,y,theta)
+        # --------------------------------------------------------------------
+        # Figure out the cropping to use
+        # --------------------------------------------------------------------
 
-        # If we are expanding (rather than simply cropping)...
-        if expand:
+        if not expand:
 
-            pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, final_wh = self._calc_total_crop(new_width,new_height,x,y,theta)
+            # If we are not expanding, just cropping, grab the crops
+            total_crop = _calc_total_crop(x,y,theta,width,height)
 
-            # Find largest expansion in x and y and start there
-            expand_in_x = width/final_wh[0]
-            expand_in_y = height/final_wh[1]
+        else:
 
-            if expand_in_x > expand_in_y:
-                expand_fx = expand_in_x
-            else:
-                expand_fx = expand_in_y
-
-            expand_fx = expand_fx
+            # If we are expanding, find the expansion factor that yields a
+            # crop that is the same size as the initial image
+            fit = optimize.minimize(_objective,[1.0],x,y,theta,width,height)
+            expansion_fx= fit.x[0]
 
             # Split amount that we need to add over between left/right
             x_to_add = int(round(width*(expand_fx - 1)))
@@ -197,19 +200,26 @@ class VirtualCamera:
             # Calculate new crops
             new_width = width + x_to_add
             new_height = height + y_to_add
-            pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, final_wh = self._calc_total_crop(new_width,new_height,x,y,theta)
+            total_crop = _calc_total_crop(x,y,theta,new_width,new_height)
 
-        pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, final_wh = total_crop
-        print("final crop size:",final_wh)
+        pan_crop_x = total_crop[0]
+        pan_crop_y = total_crop[1]
+        rotate_crop_x = total_crop[2]
+        rotate_crop_y = total_crop[3]
+        final_width = total_crop[4]
+        final_height = total_crop[5]
+
+        print("final crop size:",final_width,final_height)
 
         # For each image file
         for i, img_file in enumerate(img_list):
 
-            # Get image, possibly expanding according to expansion determined
-            # above
-            img = pyfx.util.from_file(img_file)
+            # Get image
+            img = pyfx.util.convert.from_file(img_file)
+
+            # expand image if requested
             if expand:
-                img = pyfx.util.expand(img,x_expand,y_expand)
+                img = pyfx.util.crop.expand(img,x_expand,y_expand)
 
             # Find crop incorporating pan in x.  Make sure the crop is always
             # of the correct size
@@ -225,29 +235,19 @@ class VirtualCamera:
             diff = (pan_crop_y[0] + pan_crop_y[1]) - (y1 + y2)
             y2 = y2 + diff
 
-            # Construct cropping syntax
-            if multichannel:
-                crops = ((x1,x2),(y1,y2),(0,0))
-            else:
-                crops = ((x1,x2),(y1,y2))
-
             # Crop to simulate panning
-            cropped_for_pan = skimage.util.crop(img,crops,copy=True)
+            cropped_for_pan = pyfx.util.crop.crop(img,(x1,x2),(y1,y2))
 
             # Rotate by theta
             rotated = skimage.transform.rotate(cropped_for_pan,theta[i])
 
-            if multichannel:
-                crops = (rotate_crop_x,rotate_crop_y,(0,0))
-            else:
-                crops = (rotate_crop_x,rotate_crop_y)
-
             # Crop rotated image
-            panned_and_rotated = skimage.util.crop(rotated,crops,copy=True)
+            panned_and_rotated = pyfx.util.crop.crop(rotated,(x1,x2),(y1,y2))
 
+            # Make sure the image is the correct size after our maniuplations
             final = skimage.transform.resize(panned_and_rotated,final_out_size)
 
+            # Write out
             img_root = os.path.split(img_file)[-1]
             out_file = os.path.join(out_dir,img_root)
-
-            pyfx.util.to_file(final,out_file)
+            pyfx.util.convert.to_file(final,out_file)
