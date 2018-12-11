@@ -17,143 +17,6 @@ def _objective(expand_factor,width,height,x,y,theta):
 
     return (new_width - width) + (new_height - height)
 
-def find_pan_crop(self,x,y,width,height):
-    """
-    Find crop that, when applied to a frame shifted by the maximum pans in
-    x and y, is still in the original bounds given by width and height.
-    """
-
-    # Find maximum displacement in x
-    min_x = np.min(x)
-    if min_x > 0: min_x = 0
-    max_x = np.max(x)
-    if max_x < 0: max_x = 0
-
-    max_shift_in_x = np.abs(min_x) + max_x
-    proportional_shift_in_x = max_shift_in_x/width
-
-    # Find maximum displacement in y
-    min_y = np.min(y)
-    if min_y > 0: min_y = 0
-    max_y = np.max(y)
-    if max_y < 0: max_y = 0
-
-    max_shift_in_y = np.abs(min_y) + max_y
-    proportional_shift_in_y = max_shift_in_y/height
-
-    # Figure out whether to scale to x or y, depending on which has the
-    # larger proportional shift in magnitude
-    if proportional_shift_in_x >= proportional_shift_in_y:
-        fx = proportional_shift_in_x
-    else:
-        fx = proportional_shift_in_y
-
-    # Figure out x-cropping
-
-    # Total number of pixels in x-crop
-    x_crop_pix = int(round(fx*width))
-
-    # Find fraction of pixels to place to the right of the crop.  If there
-    # is no crop in this axis, place half of pixels to left and half to
-    # the right.
-    if max_shift_in_x == 0:
-        x_fx_right = 0.5
-    else:
-        x_fx_right = max_x/max_shift_in_x
-
-    # Define crops.  Add an offset so the two sides add to the right number
-    # even in case of rounding error.
-    x_right_pix = int(round(x_crop_pix*x_fx_right))
-    x_left_pix = int(round(x_crop_pix*(1 - x_fx_right)))
-    x_offset = x_crop_pix - (x_right_pix + x_left_pix)
-    x_left_pix += x_offset
-
-    crop_x = (x_left_pix, x_right_pix)
-
-    # Figure out y-cropping
-
-    # Total number of pixels in y-crop
-    y_crop_pix = int(round(fx*height))
-
-    # Find fraction of pixels to place to the top of the crop.  If there
-    # is no crop in this axis, place half of pixels to top and half to
-    # the bottom.
-    if max_shift_in_y == 0:
-        y_fx_top = 0.5
-    else:
-        y_fx_top = max_y/max_shift_in_y
-
-    # Define crops.  Add an offset so the two sides add to the bottom number
-    # even in case of rounding error.
-    y_top_pix = int(round(y_crop_pix*y_fx_top))
-    y_bottom_pix = int(round(y_crop_pix*(1 - y_fx_top)))
-    y_offset = y_crop_pix - (y_top_pix + y_bottom_pix)
-    y_bottom_pix += y_offset
-
-    crop_y = (y_bottom_pix, y_top_pix)
-
-    new_width = width - x_crop_pix
-    new_height = height - y_crop_pix
-
-    return crop_x, crop_y, new_width, new_height
-
-def find_rotate_crop(self,theta,width,height):
-    """
-    Find crop that, when applied to a rotated frame with a maximum rotation
-    of theta, is still in the original bounds given by width and height.
-    """
-
-    # Find largest rotation that we are going to have to do
-    theta_max = np.max(np.abs(theta))
-
-    # Find height and width of box rotated in and bounded by the current
-    # height and width
-    h_prime = width*height/(height*np.sin(theta_max) + width)
-    w_prime = width*h_prime/height
-
-    # Figure out cropping
-    del_x = int(round(width - w_prime,0))
-    del_y = int(round(height - h_prime,0))
-
-    if del_x % 2 != 0:
-        del_x += 1
-    crop_x = (del_x/2,del_x/2)
-
-    if del_y % 2 != 0:
-        del_y += 1
-    crop_y = (del_y/2,del_y/2)
-
-    return crop_x, crop_y, width - del_x, height - del_y
-
-def find_zoom_crop(self,magnitude,width,height):
-    """
-    Find crop that, when applied to a rotated frame with a minimal zooming in,
-    is still in the original bounds given by width and height.
-    """
-
-    width = wh[0]
-    height = wh[1]
-
-    mag = np.min(magnitude)
-
-    if mag < 1.0:
-        err = "this function can only be used for zooming in, not out.\n"
-        raise ValueError(err)
-
-    del_x = int(round(width*(1 - 1/mag),0))
-    if del_x % 2 != 0:
-        del_x += 1
-    crop_x = (del_x/2,del_x/2)
-
-    del_y = int(round(height*(1 - 1/mag),0))
-    if del_y % 2 != 0:
-        del_y += 1
-    crop_y = (del_y/2,del_y/2)
-
-    wh = (width - del_x, height - del_y)
-
-    return wh, crop_x, crop_y
-
 
 def build_shaking(self,shaking_magnitude,num_steps):
     """
@@ -170,7 +33,7 @@ def build_shaking(self,shaking_magnitude,num_steps):
     # from center
     max_shake = int(round(3*shaking_magnitude))
 
-    # Model this as a langevin particle being buffetted by kT
+    # Model the camera as a langevin particle being buffetted by kT
     p = pyfx.physics.Particle()
     harmonic = pyfx.physics.potential.Spring1D()
     langevin = pyfx.physics.potential.Random(force_sd=shaking_magnitude)
@@ -228,7 +91,6 @@ class VirtualCamera:
 
         self._waypoints.append((t,x,y,theta))
 
-
     def render_moves(self,img_list,out_dir,shaking_magnitude=0,expand=True):
         """
         Render all of the camera moves in the waypoints for the images in
@@ -255,11 +117,7 @@ class VirtualCamera:
         # Find dimensions of image
         height = img.shape[1]
         width = img.shape[0]
-        if len(img.shape) > 2:
-            multichannel = True
-        else:
-            multichannel = False
-
+    
         final_out_size = img.shape
 
         # Grab waypoints and sort according to time

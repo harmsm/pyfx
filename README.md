@@ -28,6 +28,38 @@ The API is pretty rough at this point.  Expect changes.
 
 
 
+### Thinking
+
++ physics
+  + potentials (expose sample_coord, get_energy, get_forces, update, properties)
+    + empirical
+    + radial
+    + random
+    + spring1D
+    + uniform
+  + objects (expose advance_time, properties)
+    + particle
++ visuals
+  + sprites (expose write_to_image, properties)
+  + filters (one-off functions to tweak images)
++ util
+  + background (??? goes here?)
+  + convert (functions for converting between image types, loading/writing files)
+  + crop (functions for cropping/expanding images)
++ processors (stuff applied to whole video stream that is painful enough to calculate that it gets stored in the workspace)
+  + face_finder
+  + diff_potential
++ effects (take a workspace object as input); should take mask indicating region that should not be touched; usually take a background; if they precalculate stuff like background images, this should be stored in the workspace
+  + glowing_eyes
+  + glowing_particles
+  + ghost
+  + virtual_camera
+  + lighting_distortion
+
+
+
+
+
 
 
 ## Complicated demo
