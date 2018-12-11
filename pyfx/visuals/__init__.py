@@ -1,3 +1,3 @@
 
-import .filters
-import .sprites
+from . import filters
+from . import sprites

@@ -5,8 +5,7 @@ Collection of glowing particles that respond to underlying potentials.
 __author__ = "Michael J. Harms"
 __date__ = "2018-11-29"
 
-from . import physics
-from . import sprites
+import pyfx
 
 import numpy as np
 
@@ -151,15 +150,15 @@ class GlowingParticles:
         velocity = np.random.normal(0,self._velocity_sd,2)
 
         # Generate a physical particle
-        p = physics.Particle(coord,velocity=velocity,radius=radius,
-                             density=self._particle_density)
+        p = pyfx.physics.Particle(coord,velocity=velocity,radius=radius,
+                                  density=self._particle_density)
 
         # Equilibrate the physical particle
         if num_equilibrate_steps > 0:
             self._apply_foces(p,num_steps,num_equilibrate_steps)
 
         # Generate the sprite
-        sprite = sprites.GlowingParticle(radius,intensity,self._hue)
+        sprite = pyfx.visuals.sprites.GlowingParticle(radius,intensity,self._hue)
 
         return p, sprite
 

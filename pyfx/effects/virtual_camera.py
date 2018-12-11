@@ -1,4 +1,5 @@
 import pyfx
+from .base import Effect
 
 import numpy as np
 from scipy import interpolate, optimize
@@ -6,7 +7,7 @@ import skimage
 
 import os
 
-def _calc_total_crop(self,x,y,theta,width,height):
+def _calc_total_crop(x,y,theta,width,height):
     """
     Calculate the cropping that would result to make the x, y, and theta
     moves specified given the height and width.
@@ -29,15 +30,15 @@ def _objective(expand_factor,x,y,theta,width,height):
     new_width = width*expand_factor[0]
     new_height = height*expand_factor[0]
 
-    total_crop = _calc_total_crop(new_width,new_height,x,y,theta)
+    total_crop = _calc_total_crop(x,y,theta,new_width,new_height)
 
     final_width = total_crop[4]
     final_height = total_crop[5]
 
-    return (final_width - width) + (final_height - height)
+    return ((final_width - width) + (final_height - height))**2
 
 
-def _build_shaking(self,shaking_magnitude,num_steps):
+def _build_shaking(shaking_magnitude,num_steps):
     """
     Build a shaking trajectory.  This makes the camera wander randomly
     over a harmonic potential centered at 0, simulating a wobbly camera
@@ -97,7 +98,7 @@ class VirtualCamera(Effect):
 
         self._waypoints.append((t,x,y,theta))
 
-    def render_moves(self,img_list,out_dir,shaking_magnitude=0,expand=True):
+    def render_moves(self,img_list,out_dir,shaking_magnitude=0,max_expand=1.2):
         """
         Render all of the camera moves in the waypoints for the images in
         img_list.
@@ -116,6 +117,14 @@ class VirtualCamera(Effect):
                 err = "{} is not a directory.\n".format(out_dir)
                 raise ValueError(err)
             os.mkdir(out_dir)
+
+        if shaking_magnitude < 0:
+            err = "shaking magnitude must be <= 0\n"
+            raise ValueError(err)
+
+        if max_expand < 1:
+            err = "max_expand should be a float >= 1.0\n"
+            raise ValueError(err)
 
         # Load image as array
         img = pyfx.util.convert.from_file(img_list[0])
@@ -164,7 +173,7 @@ class VirtualCamera(Effect):
         # If we want the camera to shake, this is basically just another
         # set of (randomly directed) pans.
         if shaking_magnitude > 0:
-            shake_x, shake_y = build_shaking(shaking_magnitude,len(x))
+            shake_x, shake_y = _build_shaking(shaking_magnitude,len(x))
             x = x + shake_x
             y = y + shake_y
 
@@ -177,30 +186,25 @@ class VirtualCamera(Effect):
         # Figure out the cropping to use
         # --------------------------------------------------------------------
 
-        if not expand:
+        # Find the expansion factor that yields a crop that is the same size
+        # as the initial image
+        fit = optimize.minimize(_objective,[1.0],args=(x,y,theta,width,height))
+        expand_fx = fit.x[0]
+        if expand_fx > max_expand:
+            expand_fx = max_expand
 
-            # If we are not expanding, just cropping, grab the crops
-            total_crop = _calc_total_crop(x,y,theta,width,height)
+        # Split amount that we need to add between left/right
+        x_to_add = int(round(width*(expand_fx - 1)))
+        x_expand = [x_to_add//2, x_to_add//2 + x_to_add % 2]
 
-        else:
+        # Split amount that we need to add between top/bottom
+        y_to_add = int(round(height*(expand_fx - 1)))
+        y_expand = [y_to_add//2, y_to_add//2 + y_to_add % 2]
 
-            # If we are expanding, find the expansion factor that yields a
-            # crop that is the same size as the initial image
-            fit = optimize.minimize(_objective,[1.0],x,y,theta,width,height)
-            expansion_fx= fit.x[0]
-
-            # Split amount that we need to add over between left/right
-            x_to_add = int(round(width*(expand_fx - 1)))
-            x_expand = [x_to_add//2, x_to_add//2 + x_to_add % 2]
-
-            # Split amount that we need to add over between top/bottom
-            y_to_add = int(round(height*(expand_fx - 1)))
-            y_expand = [y_to_add//2, y_to_add//2 + y_to_add % 2]
-
-            # Calculate new crops
-            new_width = width + x_to_add
-            new_height = height + y_to_add
-            total_crop = _calc_total_crop(x,y,theta,new_width,new_height)
+        # Calculate new crops
+        new_width = width + x_to_add
+        new_height = height + y_to_add
+        total_crop = _calc_total_crop(x,y,theta,new_width,new_height)
 
         pan_crop_x = total_crop[0]
         pan_crop_y = total_crop[1]
@@ -218,8 +222,7 @@ class VirtualCamera(Effect):
             img = pyfx.util.convert.from_file(img_file)
 
             # expand image if requested
-            if expand:
-                img = pyfx.util.crop.expand(img,x_expand,y_expand)
+            img = pyfx.util.crop.expand(img,x_expand,y_expand)
 
             # Find crop incorporating pan in x.  Make sure the crop is always
             # of the correct size

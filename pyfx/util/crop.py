@@ -5,6 +5,8 @@ Utility functions for cropping frames.
 __author__ = "Michael J. Harms"
 __date__ = "2018-12-10"
 
+import pyfx
+
 import skimage
 import numpy as np
 
@@ -60,14 +62,18 @@ def expand(img,x_expand=None,y_expand=None):
 
 
     do_x_expansion = True
-    if x_expand is None:
-        x_expand = (0,1)
+    if x_expand is None or x_expand == (0,0):
+        x_expand = (0,-img.shape[0])
         do_x_expansion = False
 
     do_y_expansion = True
-    if y_expand is None:
-        y_expand = (0,1)
+    if y_expand is None or y_expand == (0,0):
+        y_expand = (0,-img.shape[1])
         do_y_expansion = False
+
+    # Don't do anything to image if no expansion actually requested
+    if not do_x_expansion and not do_y_expansion:
+        return img
 
     if img.shape[0] < x_expand[0] or img.shape[0] < x_expand[1]:
         err = "cannot expand more than 2x in the x direction\n"
@@ -78,8 +84,12 @@ def expand(img,x_expand=None,y_expand=None):
         raise ValueError(err)
 
     new_dim = [img.shape[0],img.shape[1]]
-    new_dim[0] = new_dim[0] + x_expand[0] + x_expand[1]
-    new_dim[1] = new_dim[1] + y_expand[0] + y_expand[1]
+
+    if do_x_expansion:
+        new_dim[0] = new_dim[0] + x_expand[0] + x_expand[1]
+
+    if do_y_expansion:
+        new_dim[1] = new_dim[1] + y_expand[0] + y_expand[1]
 
     if len(img.shape) > 2:
         out_array = np.zeros((new_dim[0],new_dim[1],img.shape[2]),dtype=img.dtype)
@@ -115,33 +125,33 @@ def expand(img,x_expand=None,y_expand=None):
         top_left_a = np.flip(top_left_a,1)
         top_left_b =  top_slice[:x_expand[0],:]
         top_left_b = np.flip(top_left_b,0)
-        top_left = alpha_composite(top_left_a,top_left_b)
+        top_left = pyfx.util.convert.alpha_composite(top_left_a,top_left_b)
         out_array[:x_expand[0],  :y_expand[0],:] = top_left
 
         top_right_a = right_slice[:,:y_expand[0]]
         top_right_a = np.flip(top_right_a,1)
         top_right_b =  top_slice[-x_expand[1]:,:]
         top_right_b = np.flip(top_right_b,0)
-        top_right = alpha_composite(top_right_a,top_right_b)
+        top_right = pyfx.util.convert.alpha_composite(top_right_a,top_right_b)
         out_array[-x_expand[1]:, :y_expand[0],:] = top_right
 
         bottom_left_a = left_slice[:,-y_expand[1]:]
         bottom_left_a = np.flip(bottom_left_a,1)
         bottom_left_b =  bottom_slice[:x_expand[0],:]
         bottom_left_b = np.flip(bottom_left_b,0)
-        bottom_left = alpha_composite(bottom_left_a,bottom_left_b)
+        bottom_left = pyfx.util.convert.alpha_composite(bottom_left_a,bottom_left_b)
         out_array[:x_expand[0], -y_expand[1]:,:] = bottom_left
 
         bottom_right_a = right_slice[:,-y_expand[1]:]
         bottom_right_a = np.flip(bottom_right_a,1)
         bottom_right_b =  bottom_slice[-x_expand[1]:,:]
         bottom_right_b = np.flip(bottom_right_b,0)
-        bottom_right = alpha_composite(bottom_right_a,bottom_right_b)
+        bottom_right = pyfx.util.convert.alpha_composite(bottom_right_a,bottom_right_b)
         out_array[-x_expand[1]:,-y_expand[1]:,:] = bottom_right
 
     return out_array
 
-def find_pan_crop(self,x,y,width,height):
+def find_pan_crop(x,y,width,height):
     """
     Find crop that, when applied to a frame shifted by the maximum pans in
     x and y, is still in the original bounds given by width and height.
@@ -223,7 +233,7 @@ def find_pan_crop(self,x,y,width,height):
 
     return crop_x, crop_y, new_width, new_height
 
-def find_rotate_crop(self,theta,width,height):
+def find_rotate_crop(theta,width,height):
     """
     Find crop that, when applied to a rotated frame with a maximum rotation
     of theta, is still in the original bounds given by width and height.
@@ -253,7 +263,7 @@ def find_rotate_crop(self,theta,width,height):
 
     return crop_x, crop_y, width - del_x, height - del_y
 
-def find_zoom_crop(self,magnitude,width,height):
+def find_zoom_crop(magnitude,width,height):
     """
     Find crop that, when applied to a rotated frame with a minimal zooming in,
     is still in the original bounds given by width and height.

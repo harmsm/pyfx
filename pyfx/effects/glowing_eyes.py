@@ -29,7 +29,7 @@ class GlowingEyes:
             lc = l[1][0]
 
             for i in range(len(lt)):
-                to_write = (lc[i,1],lc[i,0],lc[i,2]])
+                to_write = (lc[i,1],lc[i,0],lc[i,2])
                 try:
                     self._left_eye_coord[lt[i]].append(to_write)
                 except KeyError:

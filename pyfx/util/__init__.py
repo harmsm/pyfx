@@ -1,3 +1,3 @@
-import .convert
-import .crop
+from . import convert
+from . import crop
 from .background import Background
