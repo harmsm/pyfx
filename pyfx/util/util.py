@@ -169,7 +169,7 @@ def image_to_array(img,dtype=np.uint8,num_channels=4):
 
     return out
 
-def float_to_int(a,out_dtype=np.uint8):
+def float_to_int(a,dtype=np.uint8):
     """
     Convert a float array to an integer array.
     """
@@ -178,11 +178,11 @@ def float_to_int(a,out_dtype=np.uint8):
         err = "float array must have values between 0 and 1\n"
         raise ValueError(err)
 
-    if out_dtype not in INT_TYPES:
-        err = "out_dtype {} is not an integer type\n".format(out_dtype)
+    if dtype not in INT_TYPES:
+        err = "dtype {} is not an integer type\n".format(dtype)
         raise ValueError(err)
 
-    out = np.array(np.round(a*255,0),dtype=out_dtype)
+    out = np.array(np.round(a*255,0),dtype=dtype)
 
     return out
 
@@ -196,11 +196,11 @@ def int_to_float(a,dtype=np.float):
         err = "int array must have values between 0 and 255\n"
         raise ValueError(err)
 
-    if out_dtype not in FLOAT_TYPES:
-        err = "out_dtype {} is not an float type\n".format(out_dtype)
+    if dtype not in FLOAT_TYPES:
+        err = "dtype {} is not an float type\n".format(dtype)
         raise ValueError(err)
 
-    out = np.array(a/255,dtype=out_dtype)
+    out = np.array(a/255,dtype=dtype)
 
     return out
 
@@ -235,5 +235,3 @@ def to_file(image,image_file):
         image = array_to_image(image)
 
     image.save(image_file)
-
-
