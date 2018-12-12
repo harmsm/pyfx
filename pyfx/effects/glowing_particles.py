@@ -102,7 +102,7 @@ class GlowingParticles:
         """
 
         for p in self._particles:
-            self._apply_foces(p[0],dt,num_steps)
+            self._apply_forces(p[0],dt,num_steps)
 
     def write_out(self):
         """
@@ -155,14 +155,14 @@ class GlowingParticles:
 
         # Equilibrate the physical particle
         if num_equilibrate_steps > 0:
-            self._apply_foces(p,num_steps,num_equilibrate_steps)
+            self._apply_forces(p,num_steps,num_equilibrate_steps)
 
         # Generate the sprite
         sprite = pyfx.visuals.sprites.GlowingParticle(radius,intensity,self._hue)
 
         return p, sprite
 
-    def _apply_foces(self,particle,dt=1.0,num_steps=1):
+    def _apply_forces(self,particle,dt=1.0,num_steps=1):
         """
         Apply forces to a particle.
 

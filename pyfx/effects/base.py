@@ -48,7 +48,7 @@ class Effect:
             if t_index == 0:
                 lookup_time = 0
             else:
-                lookup_time = t_index - 1
+                lookup_time = times[t_index - 1]
 
             current_waypoint = self._waypoints[lookup_time]
 
@@ -63,14 +63,14 @@ class Effect:
 
         self._baked = False
 
-    def modify_waypoint(self,t,**kwargs):
+    def set_waypoint(self,t,**kwargs):
         """
         Modify the values in a waypoint.
         """
 
         # Just wrap add_waypoint, which will only modify values that differ
         # between kwargs and what is in the waypoint already
-        self.add_waypoint(self,t,**kwargs)
+        self.add_waypoint(t,**kwargs)
 
     def remove_waypoint(self,t):
         """

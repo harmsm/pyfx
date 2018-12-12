@@ -7,7 +7,7 @@ __date__ = "2018-12-07"
 
 import pyfx
 
-import copy, os, string, warnings, json, glob
+import copy, os, string, warnings, json, glob, shutil, sys
 
 class Workspace:
     """
@@ -144,7 +144,20 @@ class Workspace:
 
         self._max_time = len(self._img_list)
 
-    def render(*effects):
+    def render(self,out_dir,effects,time_interval=None,overwrite=False):
+
+        if os.path.isdir(out_dir):
+            if overwrite:
+                shutil.rmtree(out_dir)
+                os.mkdir(out_dir)
+            else:
+                err = "output directory {} exists\n".format(out_dir)
+                raise FileExistsError(err)
+        else:
+            os.mkdir(out_dir)
+
+        if time_interval is None:
+            time_interval = (0,self._max_time + 1)
 
         # Do some quick sanity checking -- were these effects created
         # using this workspace?
@@ -153,11 +166,24 @@ class Workspace:
                 err = "effect {} was not generated with this workspace".format(e)
                 raise ValueError(err)
 
-        self._current_time = 0
-        for t in range(self.max_time+1):
+        for t in range(time_interval[0],time_interval[1]):
+
+            self._current_time = t
+            print("processing frame ",t)
+            sys.stdout.flush()
+
             img = self.get_frame(t)
             for e in effects:
+
+                # Make sure the effect is baked before running
+                if not e.baked:
+                    e.bake()
                 img = e.render(img)
+
+            # Write out image
+            out_file = "frame{:06d}.png".format(t)
+            out_file = os.path.join(out_dir,out_file)
+            pyfx.util.convert.to_file(img,out_file)
 
     def get_frame(self,t):
 

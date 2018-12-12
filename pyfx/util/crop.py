@@ -274,8 +274,11 @@ def find_zoom_crop(magnitude,width,height):
     mag = np.min(magnitude)
 
     if mag < 1.0:
-        err = "this function can only be used for zooming in, not out.\n"
-        raise ValueError(err)
+        if 1 - mag < 1e-5:
+            mag = 1.0
+        else:
+            err = "this function can only be used for zooming in, not out.\n"
+            raise ValueError(err)
 
     del_x = int(round(width*(1 - 1/mag),0))
     if del_x % 2 != 0:

@@ -50,7 +50,7 @@ class VirtualCamera(Effect):
         self._waypoints = {}
         self._waypoints[0] = copy.copy(self._default_waypoint)
 
-        super(VirtualCamera).__init__(workspace)
+        super().__init__(workspace)
 
     def _build_shaking(self):
         """
@@ -67,15 +67,15 @@ class VirtualCamera(Effect):
         # Let it wander around the potential surface
         x = []
         y = []
-        for i in range(num_steps):
+        for t in self._workspace.times:
 
             # Update harmonic and langevin with new shaking parameters
-            harmonic.update(spring_constant=self._shaking_stiffness[i])
-            langevin.update(force_sd=self._shaking_magnitude[i])
+            harmonic.update(spring_constant=self._shaking_stiffness[t])
+            langevin.update(force_sd=self._shaking_magnitude[t])
 
             # Farthest we can go in any direction is three standard deviations
             # in kT away from center
-            max_shake = int(round(3*self._shaking_magnitude[i]))
+            max_shake = int(round(3*self._shaking_magnitude[t]))
 
             h = harmonic.get_forces(p.coord)
             l = langevin.get_forces(p.coord)
@@ -121,7 +121,7 @@ class VirtualCamera(Effect):
             raise ValueError(err)
 
         # Load image as array
-        img = pyfx.util.convert.from_file(self._workspace.get_frame(0))
+        img = self._workspace.get_frame(0)
 
         # Find dimensions of image
         self._width = img.shape[0]
@@ -140,13 +140,13 @@ class VirtualCamera(Effect):
             waypoint_times.append(self._workspace.max_time)
 
         # Grab waypoint values
-        x = np.array([self._waypoint[t]["x"] for t in waypoint_times])
-        y = np.array([self._waypoint[t]["y"] for t in waypoint_times])
-        theta = np.array([self._waypoint[t]["theta"] for t in waypoint_times])
-        zoom = np.array([self._waypoint[t]["zoom"] for t in waypoint_times])
-        shaking_magnitude = np.array([self._waypoint[t]["shaking_magnitude"]
+        x = np.array([self.waypoints[t]["x"] for t in waypoint_times])
+        y = np.array([self.waypoints[t]["y"] for t in waypoint_times])
+        theta = np.array([self.waypoints[t]["theta"] for t in waypoint_times])
+        zoom = np.array([self.waypoints[t]["zoom"] for t in waypoint_times])
+        shaking_magnitude = np.array([self.waypoints[t]["shaking_magnitude"]
                                       for t in waypoint_times])
-        shaking_stiffness = np.array([self._waypoint[t]["shaking_stiffness"]
+        shaking_stiffness = np.array([self.waypoints[t]["shaking_stiffness"]
                                       for t in waypoint_times])
 
         # Interpolate way point values.
@@ -194,7 +194,9 @@ class VirtualCamera(Effect):
 
         # Find the expansion factor that yields a crop that is the same size
         # as the initial image
-        fit = optimize.minimize(_objective,[1.0],args=(self._width,self._height,self))
+        fit = optimize.minimize(_objective,[1.0],
+                                args=(self,self._width,self._height),
+                                bounds=[(1.0,max_expand)])
         expand_fx = fit.x[0]
         if expand_fx > max_expand:
             expand_fx = max_expand
