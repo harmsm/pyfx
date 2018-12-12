@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys
+import sys, re
 import numpy
 
 if sys.version_info[0] < 3:
@@ -9,10 +9,19 @@ if sys.version_info[0] < 3:
 # Try using setuptools first, if it's installed
 from setuptools import setup, find_packages
 
+# Extract the version number from pyfx/__init__.py
+version = None
+with open("pyfx/__init__.py","r") as f:
+    for l in f:
+        if l.startswith("__version__"):
+            version = l.split("=")[1].strip()
+            version = re.sub("\"","",version)
+
+
 # Need to add all dependencies to setup as we go!
 setup(name='pyfx',
       packages=find_packages(),
-      version='0.1',
+      version=version,
       description="Python software package for algorithmically generating video effects",
       long_description=open("README.md").read(),
       author='Michael J. Harms',

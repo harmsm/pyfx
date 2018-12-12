@@ -18,19 +18,26 @@ It currently has a few features:
 + A class that identifies foreground pixels.
 + Some styling to create ghost and halo effects.  
 
-Design choices:
-+ Arrays are enforced to be of only a few types:
-    +
+####  Design choices:
 
-The API is pretty rough at this point.  Expect changes.
++ Arrays are enforced to be of only a few types
+    + Float (positive values between 0 and 1)
+    + Int (positive values between 0 and 255)
+    + Grayscale (one channel), RGB (three channel), and RGBA (four channel)
++ Arrays are stored in `array[y,x,channel]` format, where `y` indexes height and  `x`  indexes width.   The origin is in the [topleft]... 
 
 
+
+### Issues
+
++ Inconsistent x/y height/width coordinate nomenclature and conventions.
 
 
 
 ### Thinking
 
 + physics
+
   + potentials (expose sample_coord, get_energy, get_forces, update, properties)
     + empirical
     + radial
@@ -39,22 +46,81 @@ The API is pretty rough at this point.  Expect changes.
     + uniform
   + objects (expose advance_time, properties)
     + particle
+
 + visuals
+
   + sprites (expose write_to_image, properties)
   + filters (one-off functions to tweak images)
+
 + util
+
   + background (??? goes here?)
   + convert (functions for converting between image types, loading/writing files)
   + crop (functions for cropping/expanding images)
+
 + processors (stuff applied to whole video stream that is painful enough to calculate that it gets stored in the workspace)
+
   + face_finder
   + diff_potential
+
 + effects (take a workspace object as input); should take mask indicating region that should not be touched; usually take a background; if they precalculate stuff like background images, this should be stored in the workspace
+
   + glowing_eyes
   + glowing_particles
   + ghost
   + virtual_camera
   + lighting_distortion
+  + sparks (particles that are in uniform accelerationf field, shot out of a point source with some spread that then follow ballastic trajectory.  Tail points in opposite direction from velocity vector.  Length and brightness determined by speed.  maybe add friction?)
+
+
+```python
+class Effect:
+    
+    def __init__(self,effect_name=None):
+        
+        pass
+    
+    def add_waypoint(self,*args,**kwargs):
+        
+        pass
+    
+    def next(self):
+        
+        pass
+
+    def _attach_to_workspace(self,workspace):
+        pass
+   
+class Workspace:
+    
+    def __init__(self):
+        
+        pass
+    
+    def render(self,out_file,effects):
+        
+        for 
+
+    
+    
+ws = Workspace(some_collection_of_images,background)
+
+effect_one = Effect(ws)
+effect_one.add_waypoint()
+effect_one.add_waypoint()
+
+effect_two = Effect(ws)
+effect_two.add_waypoint()
+effect_two.add_waypoint()
+
+ws.render((effect_one,
+           effect_two,
+           effect_three))
+
+
+```
+
+
 
 
 
@@ -96,3 +162,19 @@ The API is pretty rough at this point.  Expect changes.
    ```python
    ws.render(out_file)
    ```
+
+
+
+## Special Effects
+
+### VirtualCamera
+
+The virtual camera can be used to add shaking, pans, rotation, or zooming an existing video file.
+
+For a `1920x1080`  video: 
+
++ `shaking_magnitude=3`, `shaking_stiffness=1` .  A slightly drunk Uncle Steve, weaving with the camera.   
++ magnitude 5.Stiffness: 10,  Airline turbulence
++ 10 Stiffness: 10, having trouble keeping her together Captain!
++ 15,15: in the process of exploding
+

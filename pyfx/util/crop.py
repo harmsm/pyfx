@@ -265,7 +265,7 @@ def find_rotate_crop(theta,width,height):
 
 def find_zoom_crop(magnitude,width,height):
     """
-    Find crop that, when applied to a rotated frame with a minimal zooming in,
+    Find crop that, when applied to a frame provides a zoom in,
     is still in the original bounds given by width and height.
 
     returns: crop tuple for x, crop tuple for y, new width, new height

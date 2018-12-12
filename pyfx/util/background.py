@@ -1,5 +1,5 @@
 
-from . import convert
+from pyfx.util import convert
 
 import numpy as np
 from skimage import color, filters, measure
@@ -14,7 +14,7 @@ class Background:
         self._bg_file = bg_file
         self._blur_sigma = blur_sigma
 
-        self._bg_img = convert.load_image_file(bg_file,return_array=False)
+        self._bg_img = convert.from_file(bg_file,return_array=False)
 
         self._bg_array_color = convert.image_to_array(self._bg_img,num_channels=3,dtype=np.float)
         self._bg_array_bw = convert.image_to_array(self._bg_img,num_channels=1,dtype=np.float)

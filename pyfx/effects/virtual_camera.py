@@ -5,22 +5,9 @@ import numpy as np
 from scipy import interpolate, optimize
 import skimage
 
-import os
+import os, copy
 
-def _calc_total_crop(x,y,theta,width,height):
-    """
-    Calculate the cropping that would result to make the x, y, and theta
-    moves specified given the height and width.
-    """
-
-    pan_crop_x, pan_crop_y, rotate_width, rotate_height = pyfx.util.crop.find_pan_crop(x,y,width,height)
-
-    # Deal with rotation
-    rotate_crop_x, rotate_crop_y, final_width, final_height = pyfx.util.crop.find_rotate_crop(theta,rotate_width,rotate_height)
-
-    return pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, final_width, final_height
-
-def _objective(expand_factor,x,y,theta,width,height):
+def _objective(expand_factor,obj,width,height):
     """
     Objective function that, when minimized, yields the expansion factor that
     should be applied with the width and height so that camera moves remain
@@ -30,157 +17,176 @@ def _objective(expand_factor,x,y,theta,width,height):
     new_width = width*expand_factor[0]
     new_height = height*expand_factor[0]
 
-    total_crop = _calc_total_crop(x,y,theta,new_width,new_height)
+    total_crop = obj._calc_total_crop(new_width,new_height)
 
-    final_width = total_crop[4]
-    final_height = total_crop[5]
+    final_width = total_crop[6]
+    final_height = total_crop[7]
 
     return ((final_width - width) + (final_height - height))**2
-
-
-def _build_shaking(shaking_magnitude,num_steps):
-    """
-    Build a shaking trajectory.  This makes the camera wander randomly
-    over a harmonic potential centered at 0, simulating a wobbly camera
-    holder.
-    """
-
-    if shaking_magnitude < 0:
-        err = "shaking magntiude must be >= 0.\n"
-        raise ValueError(err)
-
-    # Farthest we can go in any direction is three standard deviations away
-    # from center
-    max_shake = int(round(3*shaking_magnitude))
-
-    # Model the camera as a langevin particle being buffetted by kT
-    p = pyfx.physics.Particle()
-    harmonic = pyfx.physics.potential.Spring1D()
-    langevin = pyfx.physics.potential.Random(force_sd=shaking_magnitude)
-
-    # Let it wander around the potential surface
-    x = []
-    y = []
-    for i in range(num_steps):
-
-        h = harmonic.get_forces(p.coord)
-        l = langevin.get_forces(p.coord)
-        p.advance_time(h + l)
-
-        p.coord[p.coord < -max_shake] = -max_shake
-        p.coord[p.coord >  max_shake] =  max_shake
-
-        x.append(p.coord[0])
-        y.append(p.coord[1])
-
-    return np.array(x), np.array(y)
-
 
 
 class VirtualCamera(Effect):
     """
     Apply virtual pans, shakes, rotation, and zooming to frames.
+
+    Waypoint properties:
+
+    x: x position at time t
+    y: y position at time t
+    theta: rotation at time t (degrees counterclockwise)
+    zoom: float >= 1.0, where 1.0 is no zoom and >1 is zoomed in
+    shaking_magnitude: shaking_magnitude
+    shaking_stiffness: shaking_stiffness
     """
 
-    def __init__(self):
+    def __init__(self,workspace):
 
-        self._waypoints = []
+        self._default_waypoint = {"x":0.0,
+                                  "y":0.0,
+                                  "theta":0.0,
+                                  "zoom":1.0,
+                                  "shaking_magnitude":0.0,
+                                  "shaking_stiffness":1.0}
+        self._waypoints = {}
+        self._waypoints[0] = copy.copy(self._default_waypoint)
 
-    def add_waypoint(self,t,x,y,theta):
+        super(VirtualCamera).__init__(workspace)
+
+    def _build_shaking(self):
         """
-        Add a waypoint to the camera instructions.
-
-        t: time of waypoint
-        x: x position at time t
-        y: y position at time t
-        theta: rotation at time t (degrees counterclockwise)
-        """
-
-        self._waypoints.append((t,x,y,theta))
-
-    def render_moves(self,img_list,out_dir,shaking_magnitude=0,max_expand=1.2):
-        """
-        Render all of the camera moves in the waypoints for the images in
-        img_list.
-
-        img_list: list of image files
-        out_dir: output directory
-        shaking_magnitude: whether to apply shaking. magnitude is standard
-                           deviation on random noise applied to x/y
-        expand: bool.  whether to expand frame by mirroring content in the
-                frame prior to cropping, thus keeping same composition.
+        Build a shaking trajectory.  This makes the camera wander randomly
+        over a harmonic potential centered at 0, simulating a wobbly camera
+        holder.
         """
 
-        # Create directory if it does not exist
-        if not os.path.isdir(out_dir):
-            if os.path.exists(out_dir):
-                err = "{} is not a directory.\n".format(out_dir)
-                raise ValueError(err)
-            os.mkdir(out_dir)
+        # Model the camera as a langevin particle being buffetted by kT
+        p = pyfx.physics.Particle()
+        harmonic = pyfx.physics.potential.Spring1D(spring_constant=self._shaking_stiffness[0])
+        langevin = pyfx.physics.potential.Random(force_sd=self._shaking_magnitude[0])
 
-        if shaking_magnitude < 0:
-            err = "shaking magnitude must be <= 0\n"
-            raise ValueError(err)
+        # Let it wander around the potential surface
+        x = []
+        y = []
+        for i in range(num_steps):
 
-        if max_expand < 1:
-            err = "max_expand should be a float >= 1.0\n"
+            # Update harmonic and langevin with new shaking parameters
+            harmonic.update(spring_constant=self._shaking_stiffness[i])
+            langevin.update(force_sd=self._shaking_magnitude[i])
+
+            # Farthest we can go in any direction is three standard deviations
+            # in kT away from center
+            max_shake = int(round(3*self._shaking_magnitude[i]))
+
+            h = harmonic.get_forces(p.coord)
+            l = langevin.get_forces(p.coord)
+            p.advance_time(h + l)
+
+            p.coord[p.coord < -max_shake] = -max_shake
+            p.coord[p.coord >  max_shake] =  max_shake
+
+            x.append(p.coord[0])
+            y.append(p.coord[1])
+
+        return np.array(x), np.array(y)
+
+    def _calc_total_crop(self,width,height):
+        """
+        Calculate the cropping that would result to make the x, y, theta, and
+        zoom moves specified given the height and width.
+        """
+
+        # Deal with pan
+        pan_crop_x, pan_crop_y, rotate_width, rotate_height = pyfx.util.crop.find_pan_crop(self._x,self._y,width,height)
+
+        # Deal with rotation
+        rotate_crop_x, rotate_crop_y, zoom_width, zoom_height = pyfx.util.crop.find_rotate_crop(self._theta,rotate_width,rotate_height)
+
+        # Deal with zoom
+        zoom_crop_x, zoom_crop_y, final_width, final_height = pyfx.util.crop.find_zoom_crop(self._zoom,zoom_width,zoom_height)
+
+        return pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, zoom_crop_x, zoom_crop_y, final_width, final_height
+
+
+    def bake(self,max_expand=1.5):
+        """
+        Pre-calculate all of the camera moves in the waypoints.
+
+        max_expand: float between 1 and 2.  How much to expand allow the frame
+                    to expand by mirroring edges so virtual camera moves don't
+                    end up zoomed up on a tiny portion of the frame.
+        """
+
+        if max_expand < 1 and max_expand > 2:
+            err = "max_expand should be a float between 1 and 2\n"
             raise ValueError(err)
 
         # Load image as array
-        img = pyfx.util.convert.from_file(img_list[0])
+        img = pyfx.util.convert.from_file(self._workspace.get_frame(0))
 
         # Find dimensions of image
-        height = img.shape[1]
-        width = img.shape[0]
+        self._width = img.shape[0]
+        self._height = img.shape[1]
 
-        final_out_size = img.shape
+        # Final output size
+        self._final_out_size = img.shape
 
-        # Grab waypoints and sort according to time
-        waypoints = self._waypoints[:]
-        waypoints.sort()
+        # Construct list of waypoint times.  If there is no waypoint at the
+        # very end, create one.
+        waypoint_times = list(self._waypoints.keys())
+        waypoint_times.sort()
+        if waypoint_times[-1] != self._workspace.max_time:
+            t = waypoint_times[-1]
+            self._waypoints[self._workspace.max_time] = self._waypoints[t]
+            waypoint_times.append(self._workspace.max_time)
 
-        # Add a start-time at 0,0,0 if no start point is given
-        if waypoints[0][0] != 0:
-            waypoints.insert(0,(0,0,0,0))
+        # Grab waypoint values
+        x = np.array([self._waypoint[t]["x"] for t in waypoint_times])
+        y = np.array([self._waypoint[t]["y"] for t in waypoint_times])
+        theta = np.array([self._waypoint[t]["theta"] for t in waypoint_times])
+        zoom = np.array([self._waypoint[t]["zoom"] for t in waypoint_times])
+        shaking_magnitude = np.array([self._waypoint[t]["shaking_magnitude"]
+                                      for t in waypoint_times])
+        shaking_stiffness = np.array([self._waypoint[t]["shaking_stiffness"]
+                                      for t in waypoint_times])
 
-        # Add end-time at 0,0,0 if no end point is given
-        t_end = len(img_list) - 1
-        if waypoints[-1][0] != t_end:
-            waypoints.append((t_end,0,0,0))
-
-        # Extract t, x, y, and theta from waypoints
-        t, x, y, theta = zip(*waypoints)
-
-        # Interpolate entire stack of t, x, y, and theta
-        t = np.array(t)
-        out_t = np.array(range(len(img_list)),dtype=np.float)
+        # Interpolate way point values.
+        t = np.array(waypoint_times,dtype=np.float)
+        out_t = np.array(range(len(self._workspace.times)),dtype=np.float)
 
         # choose order of interpolation
-        if len(x) <= 3:
+        if len(t) <= 3:
             kind="linear"
         else:
             kind="cubic"
 
-        # Interpolate
-        x = np.array(x)
+        # Interpolate x
         x_interp = interpolate.interp1d(t,x,kind=kind)
-        x = x_interp(out_t)
+        self._x = x_interp(out_t)
 
-        y = np.array(y)
+        # Interpolate y
         y_interp = interpolate.interp1d(t,y,kind=kind)
-        y = y_interp(out_t)
+        self._y = y_interp(out_t)
 
-        # If we want the camera to shake, this is basically just another
-        # set of (randomly directed) pans.
-        if shaking_magnitude > 0:
-            shake_x, shake_y = _build_shaking(shaking_magnitude,len(x))
-            x = x + shake_x
-            y = y + shake_y
-
-        # Convert to theta radians
-        theta = np.array(theta)*np.pi/180
+        # Interpolate theta, convert to radians
         theta_interp = interpolate.interp1d(t,theta,kind=kind)
-        theta = theta_interp(out_t)
+        self._theta = theta_interp(out_t)*np.pi/180
+
+        # Interpolate zooming
+        zoom_interp = interpolate.interp1d(t,zoom,kind=kind)
+        self._zoom = zoom_interp(out_t)
+
+        # Interpolate shaking_magnitude
+        sm_interp = interpolate.interp1d(t,shaking_magnitude,kind=kind)
+        self._shaking_magnitude = sm_interp(out_t)
+
+        # Interpolate shaking_stiffness
+        ss_interp = interpolate.interp1d(t,shaking_stiffness,kind=kind)
+        self._shaking_stiffness = ss_interp(out_t)
+
+        # Append shaking to x and y
+        shake_x, shake_y = self._build_shaking()
+        self._x = self._x + shake_x
+        self._y = self._y + shake_y
 
         # --------------------------------------------------------------------
         # Figure out the cropping to use
@@ -188,69 +194,73 @@ class VirtualCamera(Effect):
 
         # Find the expansion factor that yields a crop that is the same size
         # as the initial image
-        fit = optimize.minimize(_objective,[1.0],args=(x,y,theta,width,height))
+        fit = optimize.minimize(_objective,[1.0],args=(self._width,self._height,self))
         expand_fx = fit.x[0]
         if expand_fx > max_expand:
             expand_fx = max_expand
 
         # Split amount that we need to add between left/right
-        x_to_add = int(round(width*(expand_fx - 1)))
-        x_expand = [x_to_add//2, x_to_add//2 + x_to_add % 2]
+        x_to_add = int(round(self._width*(expand_fx - 1)))
+        self._x_expand = [x_to_add//2, x_to_add//2 + x_to_add % 2]
 
         # Split amount that we need to add between top/bottom
-        y_to_add = int(round(height*(expand_fx - 1)))
-        y_expand = [y_to_add//2, y_to_add//2 + y_to_add % 2]
+        y_to_add = int(round(self._height*(expand_fx - 1)))
+        self._y_expand = [y_to_add//2, y_to_add//2 + y_to_add % 2]
 
         # Calculate new crops
-        new_width = width + x_to_add
-        new_height = height + y_to_add
-        total_crop = _calc_total_crop(x,y,theta,new_width,new_height)
+        self._new_width = self._width + x_to_add
+        self._new_height = self._height + y_to_add
+        total_crop = self._calc_total_crop(self._new_width,self._new_height)
 
-        pan_crop_x = total_crop[0]
-        pan_crop_y = total_crop[1]
-        rotate_crop_x = total_crop[2]
-        rotate_crop_y = total_crop[3]
-        final_width = total_crop[4]
-        final_height = total_crop[5]
+        self._pan_crop_x = total_crop[0]
+        self._pan_crop_y = total_crop[1]
+        self._rotate_crop_x = total_crop[2]
+        self._rotate_crop_y = total_crop[3]
+        self._zoom_crop_x = total_crop[4]
+        self._zoom_crop_y = total_crop[5]
+        self._final_width = total_crop[6]
+        self._final_height = total_crop[7]
 
-        print("final crop size:",final_width,final_height)
+        print("final crop size:",self._final_width,self._final_height)
 
-        # For each image file
-        for i, img_file in enumerate(img_list):
+        self._baked = True
 
-            # Get image
-            img = pyfx.util.convert.from_file(img_file)
+    def render(self,img):
 
-            # expand image if requested
-            img = pyfx.util.crop.expand(img,x_expand,y_expand)
+        t = self._workspace.current_time
 
-            # Find crop incorporating pan in x.  Make sure the crop is always
-            # of the correct size
-            x1 = int(round(pan_crop_x[0] + x[i]))
-            x2 = int(round(pan_crop_x[1] + x[i]))
-            diff = (pan_crop_x[0] + pan_crop_x[1]) - (x1 + x2)
-            x2 = x2 + diff
+        # expand image if requested
+        img = pyfx.util.crop.expand(img,self._x_expand,self._y_expand)
 
-            # Find crop incorporating pan in y.  Make sure the crop is always
-            # of the correct size
-            y1 = int(round(pan_crop_y[0] + y[i]))
-            y2 = int(round(pan_crop_y[1] + y[i]))
-            diff = (pan_crop_y[0] + pan_crop_y[1]) - (y1 + y2)
-            y2 = y2 + diff
+        # Find crop incorporating pan in x.  Make sure the crop is always
+        # of the correct size
+        x1 = int(round(self._pan_crop_x[0] + self._x[t]))
+        x2 = int(round(self._pan_crop_x[1] + self._x[t]))
+        diff = (self._pan_crop_x[0] + self._pan_crop_x[1]) - (x1 + x2)
+        x2 = x2 + diff
 
-            # Crop to simulate panning
-            cropped_for_pan = pyfx.util.crop.crop(img,(x1,x2),(y1,y2))
+        # Find crop incorporating pan in y.  Make sure the crop is always
+        # of the co rrect size
+        y1 = int(round(self._pan_crop_y[0] + self._y[t]))
+        y2 = int(round(self._pan_crop_y[1] + self._y[t]))
+        diff = (self._pan_crop_y[0] + self._pan_crop_y[1]) - (y1 + y2)
+        y2 = y2 + diff
 
-            # Rotate by theta
-            rotated = skimage.transform.rotate(cropped_for_pan,theta[i])
+        # Crop to simulate panning
+        cropped_for_pan = pyfx.util.crop.crop(img,(x1,x2),(y1,y2))
 
-            # Crop rotated image
-            panned_and_rotated = pyfx.util.crop.crop(rotated,(x1,x2),(y1,y2))
+        # Rotate by theta
+        rot = skimage.transform.rotate(cropped_for_pan,self._theta[t]*180/np.pi)
 
-            # Make sure the image is the correct size after our maniuplations
-            final = skimage.transform.resize(panned_and_rotated,final_out_size)
+        # Crop rotated image
+        pan_rot = pyfx.util.crop.crop(rot,self._rotate_crop_x,
+                                          self._rotate_crop_y)
 
-            # Write out
-            img_root = os.path.split(img_file)[-1]
-            out_file = os.path.join(out_dir,img_root)
-            pyfx.util.convert.to_file(final,out_file)
+        # Crop for zoom
+        pan_rot_zoom = pyfx.util.crop.crop(pan_rot,self._zoom_crop_x,
+                                                   self._zoom_crop_y)
+
+        # Make sure the image is the correct size after our maniuplations
+        final = skimage.transform.resize(pan_rot_zoom,self._final_out_size)
+
+        return final
