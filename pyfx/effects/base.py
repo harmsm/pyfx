@@ -65,6 +65,8 @@ class Effect:
         super().__init__(workspace)
         """
 
+        reserved_keys = ["t","alpha"]
+
         self._workspace = workspace
 
         try:
@@ -75,16 +77,18 @@ class Effect:
             err += "to self.add_waypoint.\n"
             raise NotImplementedError(err)
 
-        # Expose waypoint attributes as attributes to the class.  These are
-        # none until the effect is baked.
-        reserved_keys = ["t"]
+        # Make sure the self._default_waypoint keys are valid
         for k in self._default_waypoint.keys():
 
             if k in reserved_keys:
                 err = "the waypoint parameter name '{}' is reserved and cannot\n"
                 err += "be used.\n"
                 raise ValueError(err)
+        self._default_waypoint["alpha"] = 1.0
 
+        # Expose waypoint attributes as attributes to the class.  These are
+        # none until the effect is baked.
+        for k in self._default_waypoint.keys():
             try:
                 self.__dict__[k]
                 err = "default waypoint overwrites an attribute in base class\n"
@@ -241,6 +245,11 @@ class Effect:
 
             try:
                 float(values[0])
+
+                # booleans should not be interpolated ...
+                if type(values[0]) in [np.bool_,bool]:
+                    raise ValueError
+
                 values = np.array(values)
                 interpolator = interpolate.interp1d(times,values,kind="linear")
                 interpolated = interpolator(self.t)
