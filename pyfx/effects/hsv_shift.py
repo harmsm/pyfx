@@ -3,10 +3,12 @@ from .base import Effect
 
 from skimage import color
 
+import numpy as np
+
 class HSVShift(Effect):
     """
-    Apply fluctuating changes in exposure across a collection of video
-    frames.
+    Apply fluctuating changes in hue, saturation, and value across a collection
+    of video frames.
 
     Waypoint properties:
 
@@ -20,16 +22,20 @@ class HSVShift(Effect):
 
     def __init__(self,workspace):
 
-        self._default_waypoint = {"hue":None,
-                                  "saturation":None,
-                                  "value":None,
+        self._default_waypoint = {"hue":1.0,
+                                  "saturation":1.0,
+                                  "value":1.0,
                                   "protect_mask":None}
 
         super().__init__(workspace)
 
     def render(self,img,t):
+        """
+        Render the image at time t.
+        """
 
         # Convert to hsv
+        alpha = None
         if len(img.shape) == 2:
             hsv = color.rgb2hsv(color.gray2rgb(img))
         elif len(img.shape) == 3:
@@ -51,17 +57,38 @@ class HSVShift(Effect):
         hsv[:,:,2] = hsv[:,:,2]*self.value[t]
 
         # Convert back to rgb
-        rgb = color.hsv2rgb(hsv)
+        rgb = pyfx.util.convert.float_to_int(color.hsv2rgb(hsv))
+
+        if self.protect_mask[t] is not None:
+
+            # Drop protection mask onto original image
+            protect = np.zeros((img.shape[0],img.shape[1],4),dtype=np.uint8)
+            if len(img.shape) == 2:
+                protect[:,:,:3] = color.gray2rgb(img)
+            else:
+                protect[:,:,:3] = img[:,:,:3]
+
+            protect[:,:,3] = self.protect_mask[t]
+
+            # Add an alpha channel to the new rgb value
+            rgba = 255*np.ones((img.shape[0],img.shape[1],4),dtype=np.uint8)
+            rgba[:,:,:3] = rgb
+
+            # Do alpha compositing
+            out = pyfx.util.convert.alpha_composite(rgba,protect)
+
+            # Drop alpha channel
+            rgb = out[:,:,:3]
 
         # Convert to original input format
         if len(img.shape) == 2:
-            img = color.rgb2gray(rgb)
+            out = pyfx.util.convert.float_to_int(color.rgb2gray(rgb))
         else:
             if img.shape[2] == 3:
-                img = rgb
+                out = rgb
             else:
-                img = np.zeros(img.shape,dtype=img.dtype)
-                img[:,:,:3] = rgb
-                img[:,:,3] = alpha
+                out = np.zeros(img.shape,dtype=img.dtype)
+                out[:,:,:3] = rgb
+                out[:,:,3] = alpha
 
-        return img
+        return out
