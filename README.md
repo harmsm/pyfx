@@ -74,48 +74,19 @@ It currently has a few features:
 
 
 ```python
-class Effect:
-    
-    def __init__(self,effect_name=None):
-        
-        pass
-    
-    def add_waypoint(self,*args,**kwargs):
-        
-        pass
-    
-    def next(self):
-        
-        pass
+import pyfx
 
-    def _attach_to_workspace(self,workspace):
-        pass
-   
-class Workspace:
-    
-    def __init__(self):
-        
-        pass
-    
-    def render(self,out_file,effects):
-        
-        for 
+ws = pyfx.Workspace(name,some_collection_of_images,background)
 
-    
-    
-ws = Workspace(some_collection_of_images,background)
-
-effect_one = Effect(ws)
+effect_one = pyfx.effects.SomeEffect(ws)
 effect_one.add_waypoint()
 effect_one.add_waypoint()
 
-effect_two = Effect(ws)
+effect_two = pyfx.effect.SomeOtherEffect(ws)
 effect_two.add_waypoint()
 effect_two.add_waypoint()
 
-ws.render((effect_one,
-           effect_two,
-           effect_three))
+ws.render((effect_one,effect_two),out_dir)
 
 
 ```

@@ -178,7 +178,7 @@ class Workspace:
                 # Make sure the effect is baked before running
                 if not e.baked:
                     e.bake()
-                img = e.render(img)
+                img = e.render(img,t)
 
             # Write out image
             out_file = "frame{:06d}.png".format(t)
