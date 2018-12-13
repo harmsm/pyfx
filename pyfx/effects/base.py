@@ -54,8 +54,16 @@ def smooth(x,window_len=30):
     return smoothed[trim:-trim]
 
 class Effect:
+    """
+    Base class for defining effects that should be applied across an entire
+    video workspace.  Should not be used on its own; must be subclassed.
+    """
 
     def __init__(self,workspace):
+        """
+        This __init__ function should be called in subclasses using
+        super().__init__(workspace)
+        """
 
         self._workspace = workspace
 
@@ -88,6 +96,28 @@ class Effect:
         self._waypoints = {}
         self._waypoints[0] = copy.copy(self._default_waypoint)
         self._baked = False
+
+    def bake(self,smooth_window_len=30):
+        """
+        Should can be redefined in subclass.
+
+        Interpolate waypoints and do whatever precalculations are necessary
+        for rendering.
+        """
+
+        self._interpolate_waypoints(smooth_window_len)
+
+
+    def render(self,img,t):
+        """
+        Should be redefined in subclass.
+
+        Apply the appropriate transformation for time "t" (integer) to
+        img.
+        """
+
+        return img
+
 
     def add_waypoint(self,t,**kwargs):
         """
@@ -177,11 +207,6 @@ class Effect:
             err = "waypoint {} not found\n".format(t)
             raise ValueError(err)
 
-    def bake(self):
-        pass
-
-    def render(self,img,t):
-        return img
 
     def _interpolate_waypoints(self,window_len=30):
         """
@@ -214,12 +239,31 @@ class Effect:
             for t in waypoint_times:
                 values.append(self._waypoints[t][k])
 
-            values = np.array(values)
-            interpolator = interpolate.interp1d(times,values,kind="linear")
-            interpolated = interpolator(self.t)
-            smoothed = smooth(interpolated,window_len=window_len)
+            try:
+                float(values[0])
+                values = np.array(values)
+                interpolator = interpolate.interp1d(times,values,kind="linear")
+                interpolated = interpolator(self.t)
+                smoothed = smooth(interpolated,window_len=window_len)
 
-            self.__dict__[k] = smoothed
+                self.__dict__[k] = smoothed
+
+            # If the value cannot be readily converted into a float, do not
+            # interpolate, just repeat the value of the parameter over and
+            # over.
+            except (TypeError,ValueError):
+
+                out = []
+                tmp_waypoint_times = waypoint_times[:]
+                this_t = tmp_waypoint_times.pop(0)
+                for i in range(self._workspace.max_time + 1):
+                    if i == tmp_waypoint_times[0]:
+                        this_t = tmp_waypoint_times.pop(0)
+                    out.append(self._waypoints[this_t][k])
+
+                self.__dict__[k] = out
+                continue
+
 
     @property
     def default_waypoint(self):

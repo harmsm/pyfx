@@ -124,11 +124,8 @@ class VirtualCamera(Effect):
         img = self._workspace.get_frame(0)
 
         # Find dimensions of image
-        self._width = img.shape[0]
-        self._height = img.shape[1]
-
-        # Final output size
-        self._final_out_size = img.shape
+        width = img.shape[0]
+        height = img.shape[1]
 
         self._interpolate_waypoints(smooth_window_len)
 
@@ -144,23 +141,23 @@ class VirtualCamera(Effect):
         # Find the expansion factor that yields a crop that is the same size
         # as the initial image
         fit = optimize.minimize(_objective,[1.0],
-                                args=(self,self._width,self._height),
+                                args=(self,width,height),
                                 bounds=[(1.0,max_expand)])
         expand_fx = fit.x[0]
         if expand_fx > max_expand:
             expand_fx = max_expand
 
         # Split amount that we need to add between left/right
-        x_to_add = int(round(self._width*(expand_fx - 1)))
+        x_to_add = int(round(width*(expand_fx - 1)))
         self._x_expand = [x_to_add//2, x_to_add//2 + x_to_add % 2]
 
         # Split amount that we need to add between top/bottom
-        y_to_add = int(round(self._height*(expand_fx - 1)))
+        y_to_add = int(round(height*(expand_fx - 1)))
         self._y_expand = [y_to_add//2, y_to_add//2 + y_to_add % 2]
 
         # Calculate new crops
-        self._new_width = self._width + x_to_add
-        self._new_height = self._height + y_to_add
+        self._new_width = width + x_to_add
+        self._new_height = height + y_to_add
         total_crop = self._calc_total_crop(self._new_width,self._new_height)
 
         self._pan_crop_x = total_crop[0]
@@ -178,6 +175,9 @@ class VirtualCamera(Effect):
         self._baked = True
 
     def render(self,img,t):
+
+        # Final output size
+        final_out_size = img.shape
 
         # expand image if requested
         img = pyfx.util.crop.expand(img,self._x_expand,self._y_expand)
@@ -211,6 +211,6 @@ class VirtualCamera(Effect):
                                                    self._zoom_crop_y)
 
         # Make sure the image is the correct size after our maniuplations
-        final = skimage.transform.resize(pan_rot_zoom,self._final_out_size)
+        final = skimage.transform.resize(pan_rot_zoom,final_out_size)
 
         return final
