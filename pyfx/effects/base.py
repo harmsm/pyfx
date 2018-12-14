@@ -7,8 +7,7 @@ __description__ = \
    the waypoint parameters that will be settable by add_waypoint, as well as
    setting what the default values for those waypoint parameters should be.
 
-2. Define a bake() method.  This should connect between the user-specified
-   waypoints for all time points via self._interpolate_waypoints, and should
+2. Define a bake() method.  This must run self._interpolate_waypoints, and should
    precalculate information necesary for the final compositing at any time t.
 
 3. Define a render() method.  This method must have two and only two arguments:
