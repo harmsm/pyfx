@@ -146,6 +146,7 @@ class Workspace:
 
     def render(self,out_dir,effects,time_interval=None,overwrite=False):
 
+        # Make the output directory
         if os.path.isdir(out_dir):
             if overwrite:
                 shutil.rmtree(out_dir)
@@ -166,18 +167,21 @@ class Workspace:
                 err = "effect {} was not generated with this workspace".format(e)
                 raise ValueError(err)
 
+        # Go over the frames in the specified time interval
         for t in range(time_interval[0],time_interval[1]):
 
             self._current_time = t
             print("processing frame ",t)
             sys.stdout.flush()
 
+            # Go over each effect, in order
             img = self.get_frame(t)
             for e in effects:
 
                 # Make sure the effect is baked before running
                 if not e.baked:
                     e.bake()
+
                 img = e.render(img,t)
 
             # Write out image
@@ -185,31 +189,73 @@ class Workspace:
             out_file = os.path.join(out_dir,out_file)
             pyfx.util.convert.to_file(img,out_file)
 
-    def get_frame(self,t):
+    def get_frame(self,t,as_file=False):
+        """
+        Get the frame at time t.
+        """
+
+        if as_file:
+            return self._img_list[t]
 
         return pyfx.util.convert.from_file(self._img_list[t])
 
     def set_background(self,bg_frame,blur_sigma=10):
+        """
+        Set the background frame.
+
+        bg_frame: image file with background
+        blur_sigma: how much to blur background and foreground images when
+                    comparing them.
+        """
 
         self._bg_frame = bg_frame
         self._bg = pyfx.util.Background(bg_frame,blur_sigma)
 
+    def apply_processor(self,processor_instance):
+
+        processor_instance.process(workspace=self,)
+
+        pass
+
     @property
     def name(self):
+        """
+        Name of workspace.
+        """
         return self._name
 
     @property
     def current_time(self):
+        """
+        Current time of the workspace.
+        """
         return self._current_time
 
     @property
     def max_time(self):
+        """
+        Maximum time in the workspace.
+        """
         return self._max_time
 
     @property
     def times(self):
-        return list(range(self._max_time))
+        """
+        All times in the workspace.
+        """
+        return list(range(self._max_time + 1))
+
+    @property
+    def background(self):
+        """
+        Background instance.
+        """
+
+        return self._bg
 
     @property
     def bg_img(self):
+        """
+        The background image (as an image array).
+        """
         return self._bg.image

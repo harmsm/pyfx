@@ -31,6 +31,12 @@ It currently has a few features:
 ### Issues
 
 + Inconsistent x/y height/width coordinate nomenclature and conventions.
++ Inconsistent `potential`  vs. `effect`  packages names
+
+### Ideas
+
++ Flatten util API
++ Add some sort of convenience function like `convert_to`  that takes any array, image, string pointing to image file and then returns it in the proper format.  Functions could call this at the beginning, to sanitize any input.  
 
 
 
@@ -71,6 +77,24 @@ It currently has a few features:
   + virtual_camera
   + lighting_distortion
   + sparks (particles that are in uniform accelerationf field, shot out of a point source with some spread that then follow ballastic trajectory.  Tail points in opposite direction from velocity vector.  Length and brightness determined by speed.  maybe add friction?)
+
+
+
+### Concepts
+
+#### Workspace
+
+#### Effects
+
+#### Processors
+
+#### Physics
+
+
+
+
+
+
 
 
 ```python

@@ -1,4 +1,3 @@
-
 __version__ = "0.1"
 
 from . import effects
@@ -8,3 +7,6 @@ from . import util
 from . import visuals
 
 from .workspace import Workspace
+
+import os
+root_dir = os.path.dirname(os.path.abspath(__file__))

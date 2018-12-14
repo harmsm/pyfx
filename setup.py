@@ -30,5 +30,6 @@ setup(name='pyfx',
       download_url='https://github.com/harmsm/pyfx/tarball/0.1',
       zip_safe=False,
       install_requires=["scipy","numpy","scikit-image","dlib","pillow"],
-      package_data={"":["data/*"]},
+      package_data={"":["pyfx/data/*"]},
+      include_package_data=True,
       classifiers=['Programming Language :: Python'])
