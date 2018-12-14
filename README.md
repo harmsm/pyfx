@@ -26,11 +26,25 @@ It currently has a few features:
     + Grayscale (one channel), RGB (three channel), and RGBA (four channel)
 + Arrays are stored in `array[y,x,channel]` format, where `y` indexes height and  `x`  indexes width.   The origin is in the [topleft].
 
+## TO DO
 
+1. Implement `Ghost` effect.
+2. Implement `PictureInPicture` effect.
+3. Implement `Sparks`  effect and sprite.
+4. Make a `foreground_density` convenience function.
+5. Implement Impact MetaEffect
+   1. Add impulse to physics
+   2. Add trajectory to physics
+
+6. ~~Implement workspace save/load~~
 
 ### Issues
 
 + Inconsistent x/y height/width coordinate nomenclature and conventions.
++ 
+
+** Might have just broke glowing particles x/y orientation with shape change. **
+
 
 
 ### Thinking

@@ -61,7 +61,7 @@ class GlowingParticles(Effect):
         """
 
         self._hue = hue
-        self._dimensions = self._workspace.bg_img.shape
+        self._dimensions = self._workspace.shape
         self._velocity_sd = velocity_sd
         self._particle_density = particle_density
         self._radius_pareto = radius_pareto
