@@ -208,7 +208,7 @@ class VirtualCamera(Effect):
 
         # Crop for zoom
         pan_rot_zoom = pyfx.util.crop(pan_rot,self._zoom_crop_x,
-                                                   self._zoom_crop_y)
+                                              self._zoom_crop_y)
 
         # Make sure the image is the correct size after our maniuplations
         final = skimage.transform.resize(pan_rot_zoom,final_out_size)

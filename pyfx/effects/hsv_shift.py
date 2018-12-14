@@ -16,16 +16,13 @@ class HSVShift(Effect):
     saturation: float from 0 to 1.  Multiply saturation value of each pixel by
                 this amount.
     value: float from 0 to 1.  Multiply value of each pixel by this amount.
-    protect_mask: 2D array applied as an alpha mask to protect certain
-                  chunks of the image from exposure changes.
     """
 
     def __init__(self,workspace):
 
         self._default_waypoint = {"hue":1.0,
                                   "saturation":1.0,
-                                  "value":1.0,
-                                  "protect_mask":None}
+                                  "value":1.0}
 
         super().__init__(workspace)
 
