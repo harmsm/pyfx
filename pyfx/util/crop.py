@@ -125,28 +125,28 @@ def expand(img,x_expand=None,y_expand=None):
         top_left_a = np.flip(top_left_a,1)
         top_left_b =  top_slice[:x_expand[0],:]
         top_left_b = np.flip(top_left_b,0)
-        top_left = pyfx.util.convert.alpha_composite(top_left_a,top_left_b)
+        top_left = pyfx.util.alpha_composite(top_left_a,top_left_b)
         out_array[:x_expand[0],  :y_expand[0],:] = top_left
 
         top_right_a = right_slice[:,:y_expand[0]]
         top_right_a = np.flip(top_right_a,1)
         top_right_b =  top_slice[-x_expand[1]:,:]
         top_right_b = np.flip(top_right_b,0)
-        top_right = pyfx.util.convert.alpha_composite(top_right_a,top_right_b)
+        top_right = pyfx.util.alpha_composite(top_right_a,top_right_b)
         out_array[-x_expand[1]:, :y_expand[0],:] = top_right
 
         bottom_left_a = left_slice[:,-y_expand[1]:]
         bottom_left_a = np.flip(bottom_left_a,1)
         bottom_left_b =  bottom_slice[:x_expand[0],:]
         bottom_left_b = np.flip(bottom_left_b,0)
-        bottom_left = pyfx.util.convert.alpha_composite(bottom_left_a,bottom_left_b)
+        bottom_left = pyfx.util.alpha_composite(bottom_left_a,bottom_left_b)
         out_array[:x_expand[0], -y_expand[1]:,:] = bottom_left
 
         bottom_right_a = right_slice[:,-y_expand[1]:]
         bottom_right_a = np.flip(bottom_right_a,1)
         bottom_right_b =  bottom_slice[-x_expand[1]:,:]
         bottom_right_b = np.flip(bottom_right_b,0)
-        bottom_right = pyfx.util.convert.alpha_composite(bottom_right_a,bottom_right_b)
+        bottom_right = pyfx.util.alpha_composite(bottom_right_a,bottom_right_b)
         out_array[-x_expand[1]:,-y_expand[1]:,:] = bottom_right
 
     return out_array

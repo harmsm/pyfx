@@ -57,32 +57,13 @@ class HSVShift(Effect):
         hsv[:,:,2] = hsv[:,:,2]*self.value[t]
 
         # Convert back to rgb
-        rgb = pyfx.util.convert.float_to_int(color.hsv2rgb(hsv))
-
-        if self.protect_mask[t] is not None:
-
-            # Drop protection mask onto original image
-            protect = np.zeros((img.shape[0],img.shape[1],4),dtype=np.uint8)
-            if len(img.shape) == 2:
-                protect[:,:,:3] = color.gray2rgb(img)
-            else:
-                protect[:,:,:3] = img[:,:,:3]
-
-            protect[:,:,3] = self.protect_mask[t]
-
-            # Add an alpha channel to the new rgb value
-            rgba = 255*np.ones((img.shape[0],img.shape[1],4),dtype=np.uint8)
-            rgba[:,:,:3] = rgb
-
-            # Do alpha compositing
-            out = pyfx.util.convert.alpha_composite(rgba,protect)
-
-            # Drop alpha channel
-            rgb = out[:,:,:3]
+        rgb = pyfx.util.to_array(color.hsv2rgb(hsv),
+                                         dtype=np.uint8,
+                                         num_channels=3)
 
         # Convert to original input format
         if len(img.shape) == 2:
-            out = pyfx.util.convert.float_to_int(color.rgb2gray(rgb))
+            out = pyfx.util.to_array(rgb,dtype=img.dtype,num_channels=1)
         else:
             if img.shape[2] == 3:
                 out = rgb

@@ -18,11 +18,9 @@ __description__ = \
    return an image of identical dimensions to the input image.
 """
 from scipy import interpolate
-
 import numpy as np
 
 import copy
-
 
 ### MAYBE MOVE THIS INTO ITS OWN FUNCTION IN UTIL
 def smooth(x,window_len=30):
@@ -65,7 +63,7 @@ class Effect:
         super().__init__(workspace)
         """
 
-        reserved_keys = ["t","alpha"]
+        reserved_keys = ["t","protect_mask"]
 
         self._workspace = workspace
 
@@ -211,6 +209,28 @@ class Effect:
             err = "waypoint {} not found\n".format(t)
             raise ValueError(err)
 
+    def _protect(self,original_img,processed_img):
+
+        if self.protect_mask[t] is not None:
+
+            # Drop protection mask onto original image
+            protect = np.zeros((img.shape[0],img.shape[1],4),dtype=np.uint8)
+            if len(img.shape) == 2:
+                protect[:,:,:3] = color.gray2rgb(img)
+            else:
+                protect[:,:,:3] = original_img[:,:,:3]
+
+            protect[:,:,3] = self.protect_mask[t]
+
+            # Add an alpha channel to the new rgb value
+            processed_img = 255*np.ones((img.shape[0],img.shape[1],4),dtype=np.uint8)
+            rgba[:,:,:3] = rgb
+
+            # Do alpha compositing
+            out = pyfx.util.alpha_composite(rgba,protect)
+
+            # Drop alpha channel
+            rgb = out[:,:,:3]
 
     def _interpolate_waypoints(self,window_len=30):
         """

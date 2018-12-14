@@ -187,7 +187,7 @@ class Workspace:
             # Write out image
             out_file = "frame{:06d}.png".format(t)
             out_file = os.path.join(out_dir,out_file)
-            pyfx.util.convert.to_file(img,out_file)
+            pyfx.util.to_file(img,out_file)
 
     def get_frame(self,t,as_file=False):
         """
@@ -197,7 +197,7 @@ class Workspace:
         if as_file:
             return self._img_list[t]
 
-        return pyfx.util.convert.from_file(self._img_list[t])
+        return pyfx.util.to_array(self._img_list[t])
 
     def set_background(self,bg_frame,blur_sigma=10):
         """

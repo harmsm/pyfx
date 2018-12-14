@@ -2,6 +2,8 @@
 from .face_finder import find_face_stacks
 from ..base import Processor
 
+import pickle
+
 class HumanFaces(Processor):
     """
     Find human faces using dlib.  Interpolate coordinates over short intervals
@@ -33,3 +35,6 @@ class HumanFaces(Processor):
                                        p_cutoff=p_cutoff,
                                        real_cutoff=real_cutoff,
                                        min_time_visible=min_time_visible)
+
+        out_file = os.path.join(workspace.name,"face_stacks.pickle")
+        pickle.dump(face_stacks,open(out_file,"wb"))

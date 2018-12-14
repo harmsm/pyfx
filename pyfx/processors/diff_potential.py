@@ -47,4 +47,4 @@ class DiffPotential(Processor):
 
             out_file = os.path.join(diff_dir,"{:10d}.pickle".format(t))
 
-            pickle.dump(pot,out_file)
+            pickle.dump(pot,open(out_file,"wb"))

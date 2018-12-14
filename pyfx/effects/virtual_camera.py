@@ -94,13 +94,13 @@ class VirtualCamera(Effect):
         """
 
         # Deal with pan
-        pan_crop_x, pan_crop_y, rotate_width, rotate_height = pyfx.util.crop.find_pan_crop(self.x,self.y,width,height)
+        pan_crop_x, pan_crop_y, rotate_width, rotate_height = pyfx.util.find_pan_crop(self.x,self.y,width,height)
 
         # Deal with rotation
-        rotate_crop_x, rotate_crop_y, zoom_width, zoom_height = pyfx.util.crop.find_rotate_crop(self.theta*np.pi/180,rotate_width,rotate_height)
+        rotate_crop_x, rotate_crop_y, zoom_width, zoom_height = pyfx.util.find_rotate_crop(self.theta*np.pi/180,rotate_width,rotate_height)
 
         # Deal with zoom
-        zoom_crop_x, zoom_crop_y, final_width, final_height = pyfx.util.crop.find_zoom_crop(self.zoom,zoom_width,zoom_height)
+        zoom_crop_x, zoom_crop_y, final_width, final_height = pyfx.util.find_zoom_crop(self.zoom,zoom_width,zoom_height)
 
         return pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, zoom_crop_x, zoom_crop_y, final_width, final_height
 
@@ -180,7 +180,7 @@ class VirtualCamera(Effect):
         final_out_size = img.shape
 
         # expand image if requested
-        img = pyfx.util.crop.expand(img,self._x_expand,self._y_expand)
+        img = pyfx.util.expand(img,self._x_expand,self._y_expand)
 
         # Find crop incorporating pan in x.  Make sure the crop is always
         # of the correct size
@@ -197,20 +197,22 @@ class VirtualCamera(Effect):
         y2 = y2 + diff
 
         # Crop to simulate panning
-        cropped_for_pan = pyfx.util.crop.crop(img,(x1,x2),(y1,y2))
+        cropped_for_pan = pyfx.util.crop(img,(x1,x2),(y1,y2))
 
         # Rotate by theta
         rot = skimage.transform.rotate(cropped_for_pan,self.theta[t])
 
         # Crop rotated image
-        pan_rot = pyfx.util.crop.crop(rot,self._rotate_crop_x,
+        pan_rot = pyfx.util.crop(rot,self._rotate_crop_x,
                                           self._rotate_crop_y)
 
         # Crop for zoom
-        pan_rot_zoom = pyfx.util.crop.crop(pan_rot,self._zoom_crop_x,
+        pan_rot_zoom = pyfx.util.crop(pan_rot,self._zoom_crop_x,
                                                    self._zoom_crop_y)
 
         # Make sure the image is the correct size after our maniuplations
         final = skimage.transform.resize(pan_rot_zoom,final_out_size)
+
+
 
         return final

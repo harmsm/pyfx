@@ -79,7 +79,7 @@ class Sprite:
                 return img_matrix
             y_max = img_matrix.shape[1]
 
-        a = pyfx.util.convert.alpha_composite(img_matrix[x_min:x_max,y_min:y_max,:],
+        a = pyfx.util.alpha_composite(img_matrix[x_min:x_max,y_min:y_max,:],
                                               self.sprite[i_min:i_max,j_min:j_max,:])
 
         img_matrix[x_min:x_max,y_min:y_max] = a[:,:]

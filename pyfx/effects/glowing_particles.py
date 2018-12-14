@@ -112,7 +112,7 @@ class GlowingParticles(Effect):
 
         # Write out
         out_array[:,:,3] = out_array[:,:,3]*self.alpha[t]
-        return pyfx.util.convert.alpha_composite(img,out_array)
+        return pyfx.util.alpha_composite(img,out_array)
 
     def _generate_random_particle(self):
         """
