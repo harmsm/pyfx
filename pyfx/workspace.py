@@ -38,6 +38,8 @@ class Workspace:
         else:
             self._create_workspace()
 
+        self._current_time = 0
+
     def _create_workspace(self):
         """
         Create a workspace.
