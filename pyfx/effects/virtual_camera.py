@@ -50,60 +50,6 @@ class VirtualCamera(Effect):
 
         super().__init__(workspace)
 
-    def _build_shaking(self):
-        """
-        Build a shaking trajectory.  This makes the camera wander randomly
-        over a harmonic potential centered at 0, simulating a wobbly camera
-        holder.
-        """
-
-        # Model the camera as a langevin particle being buffetted by kT
-        p = pyfx.physics.Particle()
-        harmonic = pyfx.physics.potentials.Spring1D(spring_constant=self.shaking_stiffness[0])
-        langevin = pyfx.physics.potentials.Random(force_sd=self.shaking_magnitude[0])
-
-        # Let it wander around the potential surface
-        x = []
-        y = []
-        for t in self.t:
-
-            # Update harmonic and langevin with new shaking parameters
-            harmonic.update(spring_constant=self.shaking_stiffness[t])
-            langevin.update(force_sd=self.shaking_magnitude[t])
-
-            # Farthest we can go in any direction is three standard deviations
-            # in kT away from center
-            max_shake = int(round(3*self.shaking_magnitude[t]))
-
-            h = harmonic.get_forces(p.coord)
-            l = langevin.get_forces(p.coord)
-            p.advance_time(h + l)
-
-            p.coord[p.coord < -max_shake] = -max_shake
-            p.coord[p.coord >  max_shake] =  max_shake
-
-            x.append(p.coord[0])
-            y.append(p.coord[1])
-
-        return np.array(x), np.array(y)
-
-    def _calc_total_crop(self,width,height):
-        """
-        Calculate the cropping that would result to make the x, y, theta, and
-        zoom moves specified given the height and width.
-        """
-
-        # Deal with pan
-        pan_crop_x, pan_crop_y, rotate_width, rotate_height = pyfx.util.find_pan_crop(self.x,self.y,width,height)
-
-        # Deal with rotation
-        rotate_crop_x, rotate_crop_y, zoom_width, zoom_height = pyfx.util.find_rotate_crop(self.theta*np.pi/180,rotate_width,rotate_height)
-
-        # Deal with zoom
-        zoom_crop_x, zoom_crop_y, final_width, final_height = pyfx.util.find_zoom_crop(self.zoom,zoom_width,zoom_height)
-
-        return pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, zoom_crop_x, zoom_crop_y, final_width, final_height
-
 
     def bake(self,max_expand=1.5,smooth_window_len=30):
         """
@@ -174,7 +120,11 @@ class VirtualCamera(Effect):
 
         self._baked = True
 
-    def render(self,img,t):
+    def render(self,img):
+
+        t = self._workspace.current_time
+        if not self._baked:
+            self.bake()
 
         # Final output size
         final_out_size = img.shape
@@ -214,3 +164,57 @@ class VirtualCamera(Effect):
         final = skimage.transform.resize(pan_rot_zoom,final_out_size)
 
         return final
+
+    def _build_shaking(self):
+        """
+        Build a shaking trajectory.  This makes the camera wander randomly
+        over a harmonic potential centered at 0, simulating a wobbly camera
+        holder.
+        """
+
+        # Model the camera as a langevin particle being buffetted by kT
+        p = pyfx.physics.Particle()
+        harmonic = pyfx.physics.potentials.Spring1D(spring_constant=self.shaking_stiffness[0])
+        langevin = pyfx.physics.potentials.Random(force_sd=self.shaking_magnitude[0])
+
+        # Let it wander around the potential surface
+        x = []
+        y = []
+        for t in self.t:
+
+            # Update harmonic and langevin with new shaking parameters
+            harmonic.update(spring_constant=self.shaking_stiffness[t])
+            langevin.update(force_sd=self.shaking_magnitude[t])
+
+            # Farthest we can go in any direction is three standard deviations
+            # in kT away from center
+            max_shake = int(round(3*self.shaking_magnitude[t]))
+
+            h = harmonic.get_forces(p.coord)
+            l = langevin.get_forces(p.coord)
+            p.advance_time(h + l)
+
+            p.coord[p.coord < -max_shake] = -max_shake
+            p.coord[p.coord >  max_shake] =  max_shake
+
+            x.append(p.coord[0])
+            y.append(p.coord[1])
+
+        return np.array(x), np.array(y)
+
+    def _calc_total_crop(self,width,height):
+        """
+        Calculate the cropping that would result to make the x, y, theta, and
+        zoom moves specified given the height and width.
+        """
+
+        # Deal with pan
+        pan_crop_x, pan_crop_y, rotate_width, rotate_height = pyfx.util.find_pan_crop(self.x,self.y,width,height)
+
+        # Deal with rotation
+        rotate_crop_x, rotate_crop_y, zoom_width, zoom_height = pyfx.util.find_rotate_crop(self.theta*np.pi/180,rotate_width,rotate_height)
+
+        # Deal with zoom
+        zoom_crop_x, zoom_crop_y, final_width, final_height = pyfx.util.find_zoom_crop(self.zoom,zoom_width,zoom_height)
+
+        return pan_crop_x, pan_crop_y, rotate_crop_x, rotate_crop_y, zoom_crop_x, zoom_crop_y, final_width, final_height

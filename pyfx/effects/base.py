@@ -1,20 +1,33 @@
 __description__ = \
 """
+A new effect should be a subclass of Effect with the following four
+characteristics.
+
 0. __init__ must take a workspace instance and use it to initialize the base
    class via `super().__init__(workspace)`.
 
-1. In __init__, define the self._default_waypoint attribute.  This defines
-   the waypoint parameters that will be settable by add_waypoint, as well as
-   setting what the default values for those waypoint parameters should be.
+1. In __init__, define the self._default_waypoint attribute (minimally an
+   empty dictionary).  This defines the waypoint parameters that will be
+   settable by add_waypoint(), as well as setting what the default values for
+   those waypoint parameters should be.  Any key defined in this dictionary
+   (for example, "key_name") will automatically be made available within the
+   class instance (for example, as self.key_name).
 
-2. Define a bake() method.  This must run self._interpolate_waypoints, and should
-   precalculate information necesary for the final compositing at any time t.
+2. Define a bake() method.  This should precalculate information necessary
+   for the final compositing at any time t.  If no precalculation is necessary,
+   bake need not be defined.
 
-3. Define a render() method.  This method must have two and only two arguments:
-     img (an image in array format)
-     t (an integer that indicates the time point to access)
-   Render should apply whatever transformation is necessary at time and must
-   return an image of identical dimensions to the input image.
+   Any re-defined bake method must:
+   
+     A. Run self._interpolate_waypoints and
+     B. Set self._bake = True
+     C. Have default values for all arguments, so it can be run as self.bake().
+
+3. Define a render() method.  This method must have an img as its one and
+   only argument.  This should take an image in array format. Render should
+   apply whatever transformation is necessary at time and must return an image
+   of identical dimensions to the input image.
+
 """
 import pyfx
 
@@ -79,20 +92,20 @@ class Effect:
 
     def bake(self,smooth_window_len=30):
         """
-        Should can be redefined in subclass.
+        Can be redefined in subclass.  Note: be careful calling this with
+        super().bake(), as this will set the internal status of self._bake
+        to True.
 
         Interpolate waypoints and do whatever precalculations are necessary
         for rendering.
         """
 
         self._interpolate_waypoints(smooth_window_len)
+        self._baked = True
 
-    def render(self,img,t):
+    def render(self,img):
         """
         Should be redefined in subclass.
-
-        Apply the appropriate transformation for time "t" (integer) to
-        img.
         """
 
         return img

@@ -70,12 +70,13 @@ class GlowingEyes(Effect):
 
         self._baked = True
 
-    def render(self,img,t):
+    def render(self,img):
 
-        tmp_img = np.zeros((img.shape),dtype=np.uint8)
-
+        t = self._workspace.current_time
         if not self._baked:
             self.bake()
+
+        tmp_img = np.zeros((img.shape),dtype=np.uint8)
 
         try:
             left_eyes = self._left_eye_coord[t]

@@ -7,8 +7,12 @@ class MixForeAndBack(Effect):
     """
     Mix a foreground and background.  The mix is determined by the mask waypoint
     paramter.  The mask should be a 2D np.uint8 array. Values of 0 will be all
-    background, values of 255 will be all foreground. This is typically applied
-    as the first effect.
+    background, values of 255 will be all foreground. The function will coerce
+    any array/PIL.Image/file into a single-channel array.  This means a black
+    and white images will work fine.  A color image will be flattend to gray
+    scale and then applied.
+
+    This is typically applied as the first effect.
     """
 
     def __init__(self,workspace):
@@ -17,15 +21,16 @@ class MixForeAndBack(Effect):
 
         super().__init__(workspace)
 
-    def render(self,img,t):
+    def render(self,img):
+
+        t = self._workspace.current_time
+        if not self._baked:
+            self.bake()
 
         if self.mask[t] is not None:
 
-            if self.mask[t].shape != (img.shape[0],image.shape[1]) \
-               or self.mask.dtype != np.uint8:
-                err = "mask must be one channel, with same x/y dimensions as\n"
-                err += "image, and be a 0-255 uint array."
-                raise ValueError(err)
+            # Make sure mask is a single channel array
+            mask = pyfx.util.to_array(self.mask[t],num_channels=1,dtype=np.uint8)
 
             bg = np.copy(self._workspace.background.image)
             fg = pyfx.util.to_array(img,num_channels=4,dtype=np.uint8)
@@ -33,10 +38,4 @@ class MixForeAndBack(Effect):
 
             return pyfx.util.alpha_composite(bg,fg)
 
-        else:
-
-            return img
-
-
-
-            pyfx.util.alpha_composite(frame,m)
+        return img

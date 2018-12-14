@@ -26,10 +26,14 @@ class HSVShift(Effect):
 
         super().__init__(workspace)
 
-    def render(self,img,t):
+    def render(self,img):
         """
         Render the image at time t.
         """
+
+        t = self._workspace.current_time
+        if not self._baked:
+            self.bake()
 
         # Convert to hsv
         alpha = None

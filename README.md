@@ -24,16 +24,13 @@ It currently has a few features:
     + Float (positive values between 0 and 1)
     + Int (positive values between 0 and 255)
     + Grayscale (one channel), RGB (three channel), and RGBA (four channel)
-+ Arrays are stored in `array[y,x,channel]` format, where `y` indexes height and  `x`  indexes width.   The origin is in the [topleft]... 
++ Arrays are stored in `array[y,x,channel]` format, where `y` indexes height and  `x`  indexes width.   The origin is in the [topleft].
 
 
 
 ### Issues
 
 + Inconsistent x/y height/width coordinate nomenclature and conventions.
-
-
-
 
 
 ### Thinking

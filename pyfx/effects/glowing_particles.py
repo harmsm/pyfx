@@ -79,7 +79,11 @@ class GlowingParticles(Effect):
 
         self._baked = True
 
-    def render(self,img,t):
+    def render(self,img):
+
+        t = self._workspace.current_time
+        if not self._baked:
+            self.bake()
 
         # Figure out how many time steps we need to take
         num_steps = (t - self._current_time)
