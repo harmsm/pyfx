@@ -76,7 +76,6 @@ class GlowingParticles(Effect):
         self._interpolate_waypoints(smooth_window_len)
 
         self._particles = []
-        self._construct_particles(self._waypoints[0]["num_particles"])
 
         self._baked = True
 

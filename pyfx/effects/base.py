@@ -41,7 +41,7 @@ class Effect:
         super().__init__(workspace)
         """
 
-        reserved_keys = ["t","protect_mask"]
+        reserved_keys = ["t","protect_mask","alpha"]
 
         self._workspace = workspace
 
@@ -60,6 +60,7 @@ class Effect:
                 err = "the waypoint parameter name '{}' is reserved and cannot\n"
                 err += "be used.\n"
                 raise ValueError(err)
+        self._default_waypoint["protect_mask"] = None
         self._default_waypoint["alpha"] = 1.0
 
         # Expose waypoint attributes as attributes to the class.  These are

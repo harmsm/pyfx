@@ -7,6 +7,8 @@ __date__ = "2018-12-07"
 
 import pyfx
 
+import numpy as np
+
 import copy, os, string, warnings, json, glob, shutil, sys
 
 class Workspace:
@@ -199,7 +201,7 @@ class Workspace:
         if as_file:
             return self._img_list[t]
 
-        return pyfx.util.to_array(self._img_list[t])
+        return pyfx.util.to_array(self._img_list[t],dtype=np.uint8,num_channels=4)
 
     def set_background(self,bg_frame,blur_sigma=10):
         """
@@ -245,7 +247,7 @@ class Workspace:
         """
         All times in the workspace.
         """
-        return list(range(self._max_time + 1))
+        return list(range(self._max_time))
 
     @property
     def background(self):

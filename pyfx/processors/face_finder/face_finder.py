@@ -170,7 +170,7 @@ class FaceStack:
             fy = interpolate.interp1d(np.array(t),np.array(mean_y),kind='cubic')
             fr = interpolate.interp1d(np.array(t),np.array(mean_r),kind='cubic')
 
-            out_t = np.array(range(min(t),max(t)+1),dtype=np.uint8)
+            out_t = np.array(range(min(t),max(t)+1),dtype=np.int)
             out_x = fx(out_t)
             out_y = fy(out_t)
             out_r = fr(out_t)

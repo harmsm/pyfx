@@ -1,8 +1,10 @@
 
+import pyfx
+
 from .face_finder import find_face_stacks
 from ..base import Processor
 
-import pickle
+import pickle, os
 
 class HumanFaces(Processor):
     """
@@ -10,31 +12,64 @@ class HumanFaces(Processor):
     in case the model misses a face in a frame or two.
     """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self,
+                 workspace,
+                 training_data=None,
+                 max_time_gap=5,
+                 p_cutoff=0.9,
+                 real_cutoff=100,
+                 min_time_visible=5):
 
-    def process(self,
-                workspace,
-                training_data=None,
-                max_time_gap=5,
-                p_cutoff=0.9,
-                real_cutoff=100,
-                min_time_visible=5):
+        self._workspace = workspace
 
         if training_data is None:
-            training_data = os.path.join(pyfx.root_dir,'data',
-                                         'shape_predictor_68_face_landmarks.dat')
+            self._training_data = os.path.join(pyfx.root_dir,'data',
+                                               'shape_predictor_68_face_landmarks.dat')
+        else:
+            self._training_data = training_data
 
-        img_list = []
-        for t in workspace.times:
-            img_list.append(workspace.get_frame(t,as_file=True))
+        self._max_time_gap = max_time_gap
+        self._p_cutoff = p_cutoff
+        self._real_cutoff = real_cutoff
+        self._min_time_visible = min_time_visible
 
-        face_stacks = find_face_stacks(img_list=img_list,
-                                       training_data=training_data,
-                                       max_time_gap=max_time_gap,
-                                       p_cutoff=p_cutoff,
-                                       real_cutoff=real_cutoff,
-                                       min_time_visible=min_time_visible)
+        self._baked = False
 
-        out_file = os.path.join(workspace.name,"face_stacks.pickle")
-        pickle.dump(face_stacks,open(out_file,"wb"))
+    def bake(self):
+        """
+        Find human faces across a collection of frames.
+        """
+
+        out_file = os.path.join(self._workspace.name,"HumanFaces.pickle")
+
+        self._img_list = []
+        for t in self._workspace.times:
+            self._img_list.append(self._workspace.get_frame(t,as_file=True))
+
+        if os.path.isfile(out_file):
+            f = open(out_file,'rb')
+            self._face_stacks = pickle.load(f)
+            f.close()
+
+        else:
+            print("searching for human faces")
+            self._face_stacks = find_face_stacks(img_list=self._img_list,
+                                                 training_data=self._training_data,
+                                                 max_time_gap=self._max_time_gap,
+                                                 p_cutoff=self._p_cutoff,
+                                                 real_cutoff=self._real_cutoff,
+                                                 min_time_visible=self._min_time_visible)
+
+            f = open(out_file,"wb")
+            pickle.dump(self._face_stacks,f)
+            f.close()
+
+        self._baked = True
+
+    @property
+    def face_stacks(self):
+
+        if not self._baked:
+            self.bake()
+
+        return self._face_stacks
