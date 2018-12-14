@@ -59,8 +59,8 @@ class VirtualCamera(Effect):
 
         # Model the camera as a langevin particle being buffetted by kT
         p = pyfx.physics.Particle()
-        harmonic = pyfx.physics.potential.Spring1D(spring_constant=self.shaking_stiffness[0])
-        langevin = pyfx.physics.potential.Random(force_sd=self.shaking_magnitude[0])
+        harmonic = pyfx.physics.potentials.Spring1D(spring_constant=self.shaking_stiffness[0])
+        langevin = pyfx.physics.potentials.Random(force_sd=self.shaking_magnitude[0])
 
         # Let it wander around the potential surface
         x = []

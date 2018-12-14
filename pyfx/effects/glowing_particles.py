@@ -21,7 +21,7 @@ class GlowingParticles(Effect):
         workspace: the workspace associated with this effect
 
         num_particles: number of particles to add
-        potentials: list of physics.potential instances
+        potentials: list of physics.Potential instances
         """
 
         self._default_waypoint = {"num_particles":200,

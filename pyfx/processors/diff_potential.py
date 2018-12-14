@@ -40,7 +40,7 @@ class DiffPotential(Processor):
 
             img = self.get_frame(t)
             diff_smooth = self._bg.smooth_diff(img)
-            pot = pyfx.physics.potential.Empirical(diff_smooth)
+            pot = pyfx.physics.potentials.Empirical(diff_smooth)
 
             frame_diff = background.frame_diff(img_list[i])
             pot = self._construct_potential(frame_diff)
