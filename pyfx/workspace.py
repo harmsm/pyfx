@@ -42,6 +42,74 @@ class Workspace:
 
         self._current_time = 0
 
+    def render(self,out_dir,effects,time_interval=None,overwrite=False):
+
+        # Make the output directory
+        if os.path.isdir(out_dir):
+            if overwrite:
+                shutil.rmtree(out_dir)
+                os.mkdir(out_dir)
+            else:
+                err = "output directory {} exists\n".format(out_dir)
+                raise FileExistsError(err)
+        else:
+            os.mkdir(out_dir)
+
+        if time_interval is None:
+            time_interval = (0,self._max_time + 1)
+
+        # Do some quick sanity checking -- were these effects created
+        # using this workspace?
+        for e in effects:
+            if e.workspace != self:
+                err = "effect {} was not generated with this workspace".format(e)
+                raise ValueError(err)
+
+        # Go over the frames in the specified time interval
+        for t in range(time_interval[0],time_interval[1]):
+
+            self._current_time = t
+            print("processing frame ",t)
+            sys.stdout.flush()
+
+            # Go over each effect, in order
+            img = self.get_frame(t)
+            for e in effects:
+
+                # Make sure the effect is baked before running
+                if not e.baked:
+                    e.bake()
+
+                img = e.render(img)
+
+            # Write out image
+            out_file = "frame{:06d}.png".format(t)
+            out_file = os.path.join(out_dir,out_file)
+            pyfx.util.to_file(img,out_file)
+
+    def get_frame(self,t,as_file=False):
+        """
+        Get the frame at time t.
+        """
+
+        if as_file:
+            return self._img_list[t]
+
+        return pyfx.util.to_array(self._img_list[t],dtype=np.uint8,num_channels=4)
+
+    def set_background(self,bg_frame,blur_sigma=10):
+        """
+        Set the background frame.
+
+        bg_frame: image file with background
+        blur_sigma: how much to blur background and foreground images when
+                    comparing them.
+        """
+
+        self._bg_frame = bg_frame
+        self._bg = pyfx.util.Background(bg_frame,blur_sigma)
+
+
     def _create_workspace(self):
         """
         Create a workspace.
@@ -147,79 +215,6 @@ class Workspace:
             raise ValueError(err)
 
         self._max_time = len(self._img_list)
-
-    def render(self,out_dir,effects,time_interval=None,overwrite=False):
-
-        # Make the output directory
-        if os.path.isdir(out_dir):
-            if overwrite:
-                shutil.rmtree(out_dir)
-                os.mkdir(out_dir)
-            else:
-                err = "output directory {} exists\n".format(out_dir)
-                raise FileExistsError(err)
-        else:
-            os.mkdir(out_dir)
-
-        if time_interval is None:
-            time_interval = (0,self._max_time + 1)
-
-        # Do some quick sanity checking -- were these effects created
-        # using this workspace?
-        for e in effects:
-            if e.workspace != self:
-                err = "effect {} was not generated with this workspace".format(e)
-                raise ValueError(err)
-
-        # Go over the frames in the specified time interval
-        for t in range(time_interval[0],time_interval[1]):
-
-            self._current_time = t
-            print("processing frame ",t)
-            sys.stdout.flush()
-
-            # Go over each effect, in order
-            img = self.get_frame(t)
-            for e in effects:
-
-                # Make sure the effect is baked before running
-                if not e.baked:
-                    e.bake()
-
-                img = e.render(img,t)
-
-            # Write out image
-            out_file = "frame{:06d}.png".format(t)
-            out_file = os.path.join(out_dir,out_file)
-            pyfx.util.to_file(img,out_file)
-
-    def get_frame(self,t,as_file=False):
-        """
-        Get the frame at time t.
-        """
-
-        if as_file:
-            return self._img_list[t]
-
-        return pyfx.util.to_array(self._img_list[t],dtype=np.uint8,num_channels=4)
-
-    def set_background(self,bg_frame,blur_sigma=10):
-        """
-        Set the background frame.
-
-        bg_frame: image file with background
-        blur_sigma: how much to blur background and foreground images when
-                    comparing them.
-        """
-
-        self._bg_frame = bg_frame
-        self._bg = pyfx.util.Background(bg_frame,blur_sigma)
-
-    def apply_processor(self,processor_instance):
-
-        processor_instance.process(workspace=self,)
-
-        pass
 
     @property
     def name(self):

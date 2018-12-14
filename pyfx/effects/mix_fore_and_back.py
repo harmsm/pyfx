@@ -3,6 +3,8 @@ import pyfx
 
 from .base import Effect
 
+import numpy as np
+
 class MixForeAndBack(Effect):
     """
     Mix a foreground and background.  The mix is determined by the mask waypoint
