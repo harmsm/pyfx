@@ -42,6 +42,7 @@ class HSVShift(Effect):
             if img.shape[2] == 3:
                 hsv = color.rgb2hsv(img)
             elif img.shape[2] == 4:
+                # Save the alpha channel if it exists
                 alpha = img[:,:,3]
                 hsv = color.rgb2hsv(img[:,:,:3])
             else:
@@ -58,8 +59,11 @@ class HSVShift(Effect):
 
         # Convert back to rgb
         rgb = pyfx.util.to_array(color.hsv2rgb(hsv),
-                                         dtype=np.uint8,
-                                         num_channels=3)
+                                 dtype=np.uint8,
+                                 num_channels=3)
+
+        # Protect masked portions of the input image
+        rgb = self._protect(img,rgb)
 
         # Convert to original input format
         if len(img.shape) == 2:

@@ -213,6 +213,4 @@ class VirtualCamera(Effect):
         # Make sure the image is the correct size after our maniuplations
         final = skimage.transform.resize(pan_rot_zoom,final_out_size)
 
-
-
         return final

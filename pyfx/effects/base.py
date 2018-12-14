@@ -17,44 +17,22 @@ __description__ = \
    Render should apply whatever transformation is necessary at time and must
    return an image of identical dimensions to the input image.
 """
+import pyfx
+
 from scipy import interpolate
 import numpy as np
 
 import copy
 
-### MAYBE MOVE THIS INTO ITS OWN FUNCTION IN UTIL
-def smooth(x,window_len=30):
-    """
-    Smooth a signal using a moving average.
-
-    x: signal
-    window_len: size of the smoothing window (defaults to 30 -- one second)
-                if 0, no smoothing is done.
-    """
-
-    if window_len == 0:
-        return x
-
-    if window_len < 0:
-        err = "window length must be a positive integer\n"
-        raise ValueError(err)
-
-    window_len = int(round(window_len))
-    if window_len % 2 == 0:
-        window_len += 1
-
-    window = np.ones(window_len,'d')
-    signal = np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
-    smoothed = np.convolve(window/window.sum(),signal,mode='valid')
-
-    trim = int((window_len - 1)/2)
-
-    return smoothed[trim:-trim]
-
 class Effect:
     """
     Base class for defining effects that should be applied across an entire
     video workspace.  Should not be used on its own; must be subclassed.
+
+    The following paramters are defined here.
+    t: time
+    protect_mask: 2D array applied as an alpha mask to protect certain
+                  chunks of the image from exposure changes.
     """
 
     def __init__(self,workspace):
@@ -109,7 +87,6 @@ class Effect:
 
         self._interpolate_waypoints(smooth_window_len)
 
-
     def render(self,img,t):
         """
         Should be redefined in subclass.
@@ -119,7 +96,6 @@ class Effect:
         """
 
         return img
-
 
     def add_waypoint(self,t,**kwargs):
         """
@@ -210,27 +186,34 @@ class Effect:
             raise ValueError(err)
 
     def _protect(self,original_img,processed_img):
+        """
+        Protect some portion of the processed image with an original image.
+        """
 
         if self.protect_mask[t] is not None:
 
             # Drop protection mask onto original image
-            protect = np.zeros((img.shape[0],img.shape[1],4),dtype=np.uint8)
-            if len(img.shape) == 2:
-                protect[:,:,:3] = color.gray2rgb(img)
-            else:
-                protect[:,:,:3] = original_img[:,:,:3]
+            protect = np.zeros((original_img.shape[0],original_img.shape[1],4),
+                               dtype=np.uint8)
 
+            protect[:,:,:3] = pyfx.util.to_array(protect,
+                                                 num_channels=3,
+                                                 dtype=np.uint8)
             protect[:,:,3] = self.protect_mask[t]
 
             # Add an alpha channel to the new rgb value
-            processed_img = 255*np.ones((img.shape[0],img.shape[1],4),dtype=np.uint8)
+            rgba = 255*np.ones((original_img.shape[0],original_img.shape[1],4),
+                               dtype=np.uint8)
             rgba[:,:,:3] = rgb
 
             # Do alpha compositing
             out = pyfx.util.alpha_composite(rgba,protect)
 
             # Drop alpha channel
-            rgb = out[:,:,:3]
+            return out[:,:,:3]
+
+        else:
+            return processed_img
 
     def _interpolate_waypoints(self,window_len=30):
         """
@@ -273,7 +256,7 @@ class Effect:
                 values = np.array(values)
                 interpolator = interpolate.interp1d(times,values,kind="linear")
                 interpolated = interpolator(self.t)
-                smoothed = smooth(interpolated,window_len=window_len)
+                smoothed = pyfx.util.smooth(interpolated,window_len=window_len)
 
                 self.__dict__[k] = smoothed
 

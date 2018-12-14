@@ -31,12 +31,8 @@ It currently has a few features:
 ### Issues
 
 + Inconsistent x/y height/width coordinate nomenclature and conventions.
-+ Inconsistent `potential`  vs. `effect`  packages names
 
-### Ideas
 
-+ Flatten util API
-+ Add some sort of convenience function like `convert_to`  that takes any array, image, string pointing to image file and then returns it in the proper format.  Functions could call this at the beginning, to sanitize any input.  
 
 
 
@@ -58,11 +54,16 @@ It currently has a few features:
   + sprites (expose write_to_image, properties)
   + filters (one-off functions to tweak images)
 
-+ util
-
-  + background (??? goes here?)
-  + convert (functions for converting between image types, loading/writing files)
-  + crop (functions for cropping/expanding images)
++ `util`
+  + `to_file` 
+  + `to_array`
+  + `to_image` 
+  + `crop`
+  + `expand`
+  + `find_pan_crop`
+  + `find_zoom_crop`
+  + `find_rotate_crop`
+  + `smooth`
 
 + processors (stuff applied to whole video stream that is painful enough to calculate that it gets stored in the workspace)
 

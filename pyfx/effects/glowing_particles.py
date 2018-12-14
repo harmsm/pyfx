@@ -78,8 +78,6 @@ class GlowingParticles(Effect):
         self._particles = []
         self._construct_particles(self._waypoints[0]["num_particles"])
 
-
-
         self._baked = True
 
     def render(self,img,t):
@@ -171,25 +169,31 @@ class GlowingParticles(Effect):
 
     def _equalize_particles(self,target_num_particles):
         """
+        Make sure the number of particles matches what is wanted.
         """
 
         difference = int(round(target_num_particles - len(self._particles)))
         if difference < 0:
 
-            # No particles; nuke em
+            # We don't want any particles; nuke em all
             if target_num_particles == 0:
                 self._particles = []
                 return
 
+            # Choose some random particles to remove
             indexes_to_remove = np.random.choice(range(len(self._particles)),
                                                  np.abs(difference),
                                                  replace=False)
             indexes_to_remove.sort()
             for i in indexes_to_remove.reverse():
                 self._particles.pop(i)
+
+        # Add particles
         elif difference > 0:
             for i in range(difference):
                 self._particles.append(self._generate_random_particle())
+
+        # Don't do anything if there is no difference.
         else:
             pass
 

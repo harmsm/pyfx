@@ -37,7 +37,7 @@ def to_array(img,dtype=np.uint8,num_channels=4):
     """
 
     # Make sure output specs are sane
-    if dtype not in FLOAT_TYPES or dtype not in INT_TYPES:
+    if dtype not in FLOAT_TYPES and dtype not in INT_TYPES:
         err = "dtype must be some form of numpy integer or float.\n"
         raise ValueError(err)
 
@@ -59,10 +59,10 @@ def to_array(img,dtype=np.uint8,num_channels=4):
         else:
             out = _float_to_int(img,dtype=dtype)
 
-        out = _convert_channels(out,num_channels)
+        out = _convert_channels(out,dtype,num_channels)
 
     # Try to treat as a PIL Image
-    elif PIL_PATTERN.search(type(img)):
+    elif PIL_PATTERN.search(str(type(img))):
         out = _image_to_array(img,dtype=dtype,num_channels=num_channels)
 
     else:
@@ -87,7 +87,7 @@ def to_image(img):
         return _array_to_image(img)
 
     # If it's aready a PIL image, return that.
-    elif PIL_PATTERN.search(type(img)):
+    elif PIL_PATTERN.search(str(type(img))):
         return img
 
     else:
@@ -104,7 +104,7 @@ def to_file(image,image_file):
 
     if type(image) is np.ndarray:
         image = _array_to_image(image)
-    elif PIL_PATTERN.search(type(image)):
+    elif PIL_PATTERN.search(str(type(image))):
         image = image
     else:
         err = "image type not recognized.\n"
@@ -231,11 +231,15 @@ def _image_to_array(img,dtype=np.uint8,num_channels=4):
             max_possible_value = 1.0
             a = a/255
 
-    out = _convert_channels(a,num_channels)
+    out = _convert_channels(a,dtype,num_channels)
 
     return out
 
-def _convert_channels(a,num_channels=4):
+def _convert_channels(a,dtype=np.uint8,num_channels=4):
+
+    max_possible_value = 255
+    if dtype not in INT_TYPES:
+        max_possible_value = 1.0
 
     # sanity check
     if num_channels not in (1,3,4):
@@ -309,6 +313,8 @@ def _convert_channels(a,num_channels=4):
             else:
                 err = "matrix must have 1,3 or 4 many channels\n"
                 raise ValueError(err)
+
+    return out
 
 def _float_to_int(a,dtype=np.uint8):
     """
