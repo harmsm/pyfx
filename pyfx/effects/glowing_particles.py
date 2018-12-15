@@ -87,12 +87,14 @@ class GlowingParticles(Effect):
         if not self._baked:
             self.bake()
 
+        # Update the sprite generator
         self._sprite_generator.hue = self.hue[t]
         self._sprite_generator.intensity_pareto = self.intensity_pareto[t]
         self._sprite_generator.intensity_max = self.intensity_max[t]
         self._sprite_generator.radius_pareto = self.radius_pareto[t]
         self._sprite_generator.radius_max = self.radius_max[t]
 
+        # Update the particle collection
         self._particle_collection.potentials = self.potentials[t]
         self._particle_collection.velocity_sd = self.velocity_sd[t]
         self._particle_collection.particle_density = self.particle_density[t]

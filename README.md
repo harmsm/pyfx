@@ -33,10 +33,10 @@ It currently has a few features:
 4. Fix problem loading saved workspace.
 5. ~~Make a `foreground_density` convenience function.~~  
 6. ~~Make a video frame writer convenience function.~~
-7. Clean up particle_collection class.  Implement `Sparks`  effect and sprite.
+7. ~~Clean up particle_collection class.~~  Implement `Sparks`  effect and sprite.
 8. Implement Impact MetaEffect
 9. ~~Implement workspace save/load~~
-10. Integtrate with ffmpeg???
+10. Integrate with ffmpeg???
 11. Fix warnings thrown by FaceStack
 12. Check `bake` calls for all effects and see if any of the parameters should be moved into `waypoint` parameters.  (Why not make them accessible as handles vs. time? )
 13. Write unit tests, particularly for the `util`  functions. 

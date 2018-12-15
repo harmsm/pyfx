@@ -48,7 +48,7 @@ class ParticleCollection:
         """
 
         self._num_particles = num_particles
-        self._dimensions = dimensions
+        self._dimensions = np.array(dimensions)
         self.potentials = copy.copy(potentials)
         self._velocity_sd = velocity_sd
         self._particle_density = particle_density
@@ -101,16 +101,31 @@ class ParticleCollection:
 
         if num_particles is not None:
             self._num_particles = num_particles
+
         for i in range(self._num_particles):
             self._particles.append(self._generate_random_particle())
 
     def purge_invisible(self):
         """
-        Remove particles that have moved off screen.
+        Remove particles that have moved off screen. If a sprite is defined,
+        for the particle, use its out_of_frame property, as this accounts
+        for the fact that the particle may have width.  If that is not
+        defined, use the x,y coordinate of the particle.
         """
 
         for i in range(len(self._particles)-1,-1,-1):
-            if self._particles[i][1].out_of_frame:
+
+            remove = False
+            if self._particles[i][1] is not None:
+                if self._particles[i][1].out_of_frame:
+                    remove = True
+            else:
+                if np.min(self._particles[i][0].coord) < 0 or \
+                   np.sum(self._particles[i][0].coord > self._dimensions) > 0:
+
+                   remove = True
+
+            if remove:
                 self._particles.pop(i)
 
     def equalize_particles(self,target_num_particles):

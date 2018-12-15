@@ -179,6 +179,10 @@ class GlowingParticleGenerator:
         self._intensity_max = intensity_max
 
     def create(self,**kwargs):
+        """
+        This is built around **kwargs so a ParticleCollection instance can
+        throw particle properties at it.
+        """
 
         try:
             radius = kwargs["radius"]
