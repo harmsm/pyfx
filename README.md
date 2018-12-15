@@ -32,9 +32,9 @@ It currently has a few features:
 2. ~~Implement `PictureInPicture` effect.~~
 3. Equilibrate particles after adding
 4. Fix problem loading saved workspace.
-5. Make a `foreground_density` convenience function. 
+5. ~~Make a `foreground_density` convenience function.~~  
 6. Make a video frame writer convenience function.
-7. Implement `Sparks`  effect and sprite.
+7. Clean up particle_collection class.  Implement `Sparks`  effect and sprite.
 8. Implement Impact MetaEffect
 9. ~~Implement workspace save/load~~
 10. Fix warnings thrown by FaceStack
