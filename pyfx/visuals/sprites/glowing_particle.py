@@ -162,3 +162,71 @@ class GlowingParticle(Sprite):
 
         self._alpha = alpha
         self._build_sprite()
+
+class GlowingParticleGenerator:
+
+    def __init__(self,
+                 hue=0.5,
+                 radius_pareto=1.0,
+                 radius_max=5,
+                 intensity_pareto=1.0,
+                 intensity_max=10):
+
+        self._hue = hue
+        self._radius_pareto = radius_pareto
+        self._radius_max = radius_max
+        self._intensity_pareto = intensity_pareto
+        self._intensity_max = intensity_max
+
+    def create(self,**kwargs):
+
+        try:
+            radius = kwargs["radius"]
+        except KeyError:
+            radius = np.random.pareto(self._radius_pareto) + 1.0
+            if radius > self._radius_max:
+                radius = self._radius_max
+
+        # Generate random intensity (sampling from Pareto scale-free
+        # distribution)
+        intensity = np.random.pareto(self._intensity_pareto) + 1.0
+        if intensity > self._intensity_max:
+            intensity = self._intensity_max
+        intensity = intensity/self._intensity_max
+
+        return GlowingParticle(radius=radius,intensity=intensity,hue=self._hue)
+
+    @property
+    def hue(self):
+        return self._hue
+    @hue.setter
+    def hue(self,hue):
+        self._hue = hue
+
+    @property
+    def radius_pareto(self):
+        return self._radius_pareto
+    @radius_pareto.setter
+    def radius_pareto(self,radius_pareto):
+        self._radius_pareto = radius_pareto
+
+    @property
+    def radius_max(self):
+        return self._radius_max
+    @radius_max.setter
+    def radius_max(self,radius_max):
+        self._radius_max = radius_max
+
+    @property
+    def intensity_pareto(self):
+        return self._intensity_pareto
+    @intensity_pareto.setter
+    def intensity_pareto(self,intensity_pareto):
+        self._intensity_pareto = intensity_pareto
+
+    @property
+    def intensity_max(self):
+        return self._intensity_max
+    @intensity_max.setter
+    def intensity_max(self,intensity_max):
+        self._intensity_max = intensity_max

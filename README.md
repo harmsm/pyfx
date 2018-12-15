@@ -29,7 +29,7 @@ It currently has a few features:
 ## TO DO
 
 1. ~~Implement `Ghost` effect.~~
-2. Implement `PictureInPicture` effect.
+2. ~~Implement `PictureInPicture` effect.~~
 3. Equilibrate particles after adding
 4. Fix problem loading saved workspace.
 5. Make a `foreground_density` convenience function. 

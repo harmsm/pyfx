@@ -64,8 +64,21 @@ class GlowingParticles(Effect):
 
         self._interpolate_waypoints(smooth_window_len)
 
-        self._particles = []
+        self._sprite_generator = pyfx.visuals.sprites.GlowingParticleGenerator(hue=self.hue,
+                                                          radius_pareto=self.radius_pareto[0],
+                                                          radius_max=self.radius_max[0],
+                                                          intensity_pareto=self.intensity_pareto[0],
+                                                          intensity_max=self.intensity_max[0])
 
+        self._particle_collection = pyfx.physics.ParticleCollection(num_particles=self.num_particles[0],
+                                                       potentials=self.potentials[0],
+                                                       velocity_sd=self.velocity_sd[0],
+                                                       particle_density=self.particle_density[0],
+                                                       radius_pareto=self.radius_pareto[0],
+                                                       radius_max=self.radius_max[0],
+                                                       sample_which_potential=self.sample_which_potential[0],
+                                                       purge=self.purge[0],
+                                                       sprite_generator=self._sprite_generator)
         self._baked = True
 
     def render(self,img):
@@ -74,15 +87,19 @@ class GlowingParticles(Effect):
         if not self._baked:
             self.bake()
 
-        self._hue = self.hue[t]
-        self._velocity_sd = self.velocity_sd[t]
-        self._particle_density = self.particle_density[t]
-        self._radius_pareto = self.radius_pareto[t]
-        self._radius_max = self.radius_max[t]
-        self._intensity_pareto = self.intensity_pareto[t]
-        self._intensity_max = self.intensity_max[t]
-        self._sample_which_potential = np.int(self.sample_which_potential[t])
-        self._purge = self.purge[t]
+        self._sprite_generator.hue = self.hue[t]
+        self._sprite_generator.intensity_pareto = self.intensity_pareto[t]
+        self._sprite_generator.intensity_max = self.intensity_max[t]
+        self._sprite_generator.radius_pareto = self.radius_pareto[t]
+        self._sprite_generator.radius_max = self.radius_max[t]
+
+        self._particle_collection.potentials = self.potentials[t]
+        self._particle_collection.velocity_sd = self.velocity_sd[t]
+        self._particle_collection.particle_density = self.particle_density[t]
+        self._particle_collection.radius_pareto = self.radius_pareto[t]
+        self._particle_collection.radius_max = self.radius_max[t]
+        self._particle_collection.sample_which_potential = np.int(self.sample_which_potential[t])
+        self._particle_collection.purge = self.purge[t]
 
         # Figure out how many time steps we need to take
         num_steps = (t - self._current_time)
@@ -92,135 +109,24 @@ class GlowingParticles(Effect):
         self._current_time = t
 
         # Advance time for the particles
-        self._advance_time(num_steps=num_steps)
+        self._particle_collection.advance_time(num_steps=num_steps)
 
         # Remove particles that are off screen
-        if self._purge:
-            self._purge_invisible()
+        if self.purge[t]:
+            self._particle_collection.purge_invisible()
 
         # Add or subtract particles so we have the desired number
         target_num_particles = np.int(self.num_particles[t])
         if target_num_particles < 0:
             target_num_particles = 0
-        self._equalize_particles(target_num_particles)
+        self._particle_collection.equalize_particles(target_num_particles)
 
         # Construct the particle sprites
         out_array = np.zeros((self._dimensions[0],self._dimensions[1],4),
                               dtype=np.uint8)
-        for p in self._particles:
+        for p in self._particle_collection.particles:
             out_array = p[1].write_to_image(p[0]._coord,out_array)
 
         # Write out
         out_array[:,:,3] = out_array[:,:,3]*self.alpha[t]
         return pyfx.util.alpha_composite(img,out_array)
-
-    def _generate_random_particle(self):
-        """
-        Generate a new particle.
-        """
-
-        # Generate random radius (sampling from Pareto scale-free
-        # distribution)
-        radius = np.random.pareto(self._radius_pareto) + 1.0
-        if radius > self._radius_max:
-            radius = self._radius_max
-
-        # Generate random intensity (sampling from Pareto scale-free
-        # distribution)
-        intensity = np.random.pareto(self._intensity_pareto) + 1.0
-        if intensity > self._intensity_max:
-            intensity = self._intensity_max
-        intensity = intensity/self._intensity_max
-
-        # Generate x,y coordinates for the particle (sampling from potential
-        # or random)
-        if len(self.potentials[self._current_time]) > 0 and self._sample_which_potential >= 0:
-            coord = self.potentials[self._current_time][self._sample_which_potential].sample_coord()
-        else:
-            x = np.random.choice(range(self._dimensions[0]))
-            y = np.random.choice(range(self._dimensions[1]))
-            coord = np.array((x,y))
-
-        # Generate random velocity (sampling from a normal distribution)
-        velocity = np.random.normal(0,self._velocity_sd,2)
-
-        # Generate a physical particle
-        p = pyfx.physics.Particle(coord,velocity=velocity,radius=radius,
-                                  density=self._particle_density)
-
-        # Generate the sprite
-        sprite = pyfx.visuals.sprites.GlowingParticle(radius,intensity,self._hue)
-
-        return p, sprite
-
-    def _construct_particles(self,num_particles):
-        """
-        Populate list of particles.
-        """
-        for i in range(num_particles):
-            self._particles.append(self._generate_random_particle())
-
-    def _purge_invisible(self):
-        """
-        Remove particles that have moved off screen.
-        """
-
-        for i in range(len(self._particles)-1,-1,-1):
-            if self._particles[i][1].out_of_frame:
-                self._particles.pop(i)
-
-    def _equalize_particles(self,target_num_particles):
-        """
-        Make sure the number of particles matches what is wanted.
-        """
-
-        difference = int(round(target_num_particles - len(self._particles)))
-        if difference < 0:
-
-            # We don't want any particles; nuke em all
-            if target_num_particles == 0:
-                self._particles = []
-                return
-
-            # Choose some random particles to remove
-            indexes_to_remove = np.random.choice(range(len(self._particles)),
-                                                 np.abs(difference),
-                                                 replace=False)
-            indexes_to_remove.sort()
-            for i in indexes_to_remove.reverse():
-                self._particles.pop(i)
-
-        # Add particles
-        elif difference > 0:
-            for i in range(difference):
-                self._particles.append(self._generate_random_particle())
-
-        # Don't do anything if there is no difference.
-        else:
-            pass
-
-    def _advance_time(self,dt=1.0,num_steps=1):
-        """
-        Take time step(s).
-
-        dt: time step size.
-        num_steps: number of steps to take
-        """
-
-        for p in self._particles:
-            self._apply_forces(p[0],dt,num_steps)
-
-    def _apply_forces(self,particle,dt=1.0,num_steps=1):
-        """
-        Apply forces to a particle.
-
-        particle: physics.Particle instance
-        dt: time step
-        num_steps: number of steps
-        """
-
-        for i in range(num_steps):
-            forces = np.array([0.0,0.0],dtype=np.float)
-            for pot in self.potentials[self._current_time]:
-                forces += pot.get_forces(particle.coord)
-            particle.advance_time(forces,dt)
