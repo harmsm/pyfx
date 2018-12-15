@@ -22,7 +22,7 @@ with open("pyfx/__init__.py","r") as f:
 setup(name='pyfx',
       packages=find_packages(),
       version=version,
-      description="Python software package for algorithmically generating video effects",
+      description="Python software package for generating video effects",
       long_description=open("README.md").read(),
       author='Michael J. Harms',
       author_email='harmsm@gmail.com',

@@ -1,8 +1,7 @@
 # pyfx
 
 Python library for adding visual effects to video streams.  This is a personal
-project to learn how to think about such effects, rather than an attempt to
-build a real production tool.  It's built on libraries such as
+project, rather than an attempt to build a real production tool.  It's built on libraries such as
 [skimage](https://scikit-image.org/), [pillow](https://pillow.readthedocs.io/),
 [dlib](http://dlib.net/) and (of course)
 [numpy](http://www.numpy.org/)/[scipy](https://www.scipy.org/).
@@ -20,11 +19,11 @@ It currently has a few features:
 
 ####  Design choices:
 
-+ Arrays are enforced to be of only a few types
-    + Float (positive values between 0 and 1)
-    + Int (positive values between 0 and 255)
++ Image arrays are enforced to be of only a few types
+    + `float` (positive values between 0 and 1)
+    + `int` (positive values between 0 and 255)
     + Grayscale (one channel), RGB (three channel), and RGBA (four channel)
-+ Arrays are stored in `array[y,x,channel]` format, where `y` indexes height and  `x`  indexes width.   The origin is in the [topleft].
++ Arrays are stored in `array[y,x,channel]` format, where `y` indexes height and  `x`  indexes width.   The origin is in the top, left.  So 0,0 corresponds to the top left.  200,
 
 ## TO DO
 
@@ -33,13 +32,14 @@ It currently has a few features:
 3. Equilibrate particles after adding
 4. Fix problem loading saved workspace.
 5. ~~Make a `foreground_density` convenience function.~~  
-6. Make a video frame writer convenience function.
+6. ~~Make a video frame writer convenience function.~~
 7. Clean up particle_collection class.  Implement `Sparks`  effect and sprite.
 8. Implement Impact MetaEffect
 9. ~~Implement workspace save/load~~
-10. Fix warnings thrown by FaceStack
-11. Check `bake` calls for all effects and see if any of the parameters should be moved into `waypoint` parameters.  (Why not make them accessible as handles vs. time? )
-12. Write unit tests, particularly for the `util`  functions. 
+10. Integtrate with ffmpeg???
+11. Fix warnings thrown by FaceStack
+12. Check `bake` calls for all effects and see if any of the parameters should be moved into `waypoint` parameters.  (Why not make them accessible as handles vs. time? )
+13. Write unit tests, particularly for the `util`  functions. 
 
 ### Issues
 
