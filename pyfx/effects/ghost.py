@@ -37,13 +37,14 @@ class Ghost(Effect):
         # Change hue to current waypoint color
         ghost = color.rgb2hsv(ghost)
         ghost[:,:,0] = self.hue[t]
+        ghost[:,:,1] = 1.0
         ghost = color.hsv2rgb(ghost)
 
         # Convert back to an RGBA int array
         ghost = pyfx.util.to_array(ghost,num_channels=4,dtype=np.uint8)
 
         # Put diff on alpha channel, scaling by total_alpha
-        diff = self._workspace.background.frame_diff(img)
+        diff = self._workspace.background.frame_diff(frame_without_proc)
         ghost[:,:,3] = pyfx.util.to_array(diff*self.total_alpha[t],
                                           num_channels=1,dtype=np.uint8)
 

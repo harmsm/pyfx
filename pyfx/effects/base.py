@@ -212,7 +212,7 @@ class Effect:
             protect = np.zeros((original_img.shape[0],original_img.shape[1],4),
                                dtype=np.uint8)
 
-            protect[:,:,:3] = pyfx.util.to_array(protect,
+            protect[:,:,:3] = pyfx.util.to_array(original_img,
                                                  num_channels=3,
                                                  dtype=np.uint8)
             protect[:,:,3] = pyfx.util.to_array(self.protect_mask[t],
