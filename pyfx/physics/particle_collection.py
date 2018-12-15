@@ -110,7 +110,7 @@ class ParticleCollection:
         """
 
         for i in range(len(self._particles)-1,-1,-1):
-            if self._particles[i][0].out_of_frame:
+            if self._particles[i][1].out_of_frame:
                 self._particles.pop(i)
 
     def equalize_particles(self,target_num_particles):
@@ -165,7 +165,7 @@ class ParticleCollection:
 
         for i in range(num_steps):
             forces = np.array([0.0,0.0],dtype=np.float)
-            for pot in self.potentials[self._current_time]:
+            for pot in self.potentials:
                 forces += pot.get_forces(particle.coord)
             particle.advance_time(forces,dt)
 
