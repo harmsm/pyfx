@@ -197,7 +197,7 @@ class Workspace:
         json.dump(out_dict,f)
         f.close()
 
-    def _intialize_src(self):
+    def _initialize_src(self):
         """
         Load the video source.
         """
@@ -237,8 +237,6 @@ class Workspace:
         self._current_time = 0
         self._max_time = len(self._img_list) - 1
         self._shape = pyfx.util.to_array(self._img_list[0],num_channels=1).shape
-
-        self._save()
 
     @property
     def name(self):

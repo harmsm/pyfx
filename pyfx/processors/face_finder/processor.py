@@ -52,7 +52,7 @@ class HumanFaces(Processor):
             f.close()
 
         else:
-            print("searching for human faces")
+            print("Searching for human faces (slow, but only happens once).")
             self._face_stacks = find_face_stacks(img_list=self._img_list,
                                                  training_data=self._training_data,
                                                  max_time_gap=self._max_time_gap,

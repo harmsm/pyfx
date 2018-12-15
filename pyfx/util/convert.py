@@ -257,7 +257,9 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
 
         # ... to 3 or 4 output channels
         else:
-            out[:,:,:3] = a[:,:3]
+            out[:,:,0] = a[:,:]
+            out[:,:,1] = a[:,:]
+            out[:,:,2] = a[:,:]
             if num_channels == 4:
                 out[:,:,3] = max_possible_value
 
@@ -316,20 +318,37 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
 
     return out
 
-def _float_to_int(a,dtype=np.uint8):
+def _float_to_int(a,dtype=np.uint8,zero_tolerance=1e-6):
     """
     Convert a float array to an integer array.
     """
 
-    if np.min(a) < 0 or np.max(a) > 1:
-        err = "float array must have values between 0 and 1\n"
-        raise ValueError(err)
+    # Start with pointer to "a"
+    b = a
+
+    # Check min/max bounds
+    if np.min(b) < 0 or np.max(b) > 1:
+
+        # We're about to modify array; make a copy
+        b = np.copy(a)
+
+        # Filter out values that are just below zero or just above 1.
+        low_cut = np.logical_and(a < 0,np.abs(a) < zero_tolerance)
+        high_cut = np.logical_and(a > 1,(a - 1) < zero_tolerance)
+
+        b[low_cut] = 0.0
+        b[high_cut] = 1.0
+
+        # If we're still outside bounds, throw error
+        if np.min(b) < 0 or np.max(b) > 1:
+            err = "float array must have values between 0 and 1\n"
+            raise ValueError(err)
 
     if dtype not in INT_TYPES:
         err = "dtype {} is not an integer type\n".format(dtype)
         raise ValueError(err)
 
-    out = np.array(np.round(a*255,0),dtype=dtype)
+    out = np.array(np.round(b*255,0),dtype=dtype)
 
     return out
 
@@ -339,15 +358,28 @@ def _int_to_float(a,dtype=np.float):
     Convert an integer array to a float array.
     """
 
-    if np.min(a) < 0 or np.max(a) > 255:
-        err = "int array must have values between 0 and 255\n"
-        raise ValueError(err)
+    # Start with pointer to "a"
+    b = a
+
+    # Check min/max bounds
+    if np.min(b) < 0 or np.max(b) > 255:
+
+        # Truncate values of -1 and 256 --> maybe reached by a rounding
+        # error elsewhere.
+        b = np.copy(a)
+        b[a == -1] = 0
+        b[a == 256] = 255
+
+        # If that still didn't fix it, throw an error
+        if np.min(b) < 0 or np.max(b) > 255:
+            err = "int array must have values between 0 and 255\n"
+            raise ValueError(err)
 
     if dtype not in FLOAT_TYPES:
         err = "dtype {} is not an float type\n".format(dtype)
         raise ValueError(err)
 
-    out = np.array(a/255,dtype=dtype)
+    out = np.array(b/255,dtype=dtype)
 
     return out
 

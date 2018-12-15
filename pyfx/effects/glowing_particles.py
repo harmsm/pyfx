@@ -22,25 +22,6 @@ class GlowingParticles(Effect):
 
         num_particles: number of particles to add
         potentials: list of physics.Potential instances
-        """
-
-        self._default_waypoint = {"num_particles":200,
-                                  "potentials":[]}
-
-        super().__init__(workspace)
-
-    def bake(self,
-             hue=0.5,
-             velocity_sd=1.0,
-             particle_density=0.01,
-             radius_pareto=1.0,
-             radius_max=5,
-             intensity_pareto=1.0,
-             intensity_max=10,
-             sample_which_potential=0,
-             purge=True,
-             smooth_window_len=30):
-        """
         hue: particle hue (0 to 1 scale)
         velocity_sd: standard deviation of the velocity distribution for initial
                      particle placement
@@ -57,21 +38,29 @@ class GlowingParticles(Effect):
                                 is no potential loaded, also sample randomly.
         purge: whether or not to purge invisible particles and replace them to
                keep the number of particles constant.
+        """
+
+        self._default_waypoint = {"num_particles":200,
+                                  "potentials":[],
+                                  "hue":0.5,
+                                  "velocity_sd":1.0,
+                                  "particle_density":0.01,
+                                  "radius_pareto":1.0,
+                                  "radius_max":5,
+                                  "intensity_pareto":1.0,
+                                  "intensity_max":10,
+                                  "sample_which_potential":0,
+                                  "purge":True}
+
+        super().__init__(workspace)
+
+    def bake(self,smooth_window_len=30):
+        """
         smooth_window_len: length of window for interpolation
         """
 
-        self._hue = hue
-        self._dimensions = self._workspace.shape
-        self._velocity_sd = velocity_sd
-        self._particle_density = particle_density
-        self._radius_pareto = radius_pareto
-        self._radius_max = radius_max
-        self._intensity_pareto = intensity_pareto
-        self._intensity_max = intensity_max
-        self._sample_which_potential = sample_which_potential
-        self._purge = purge
-
         self._current_time = 0
+        self._dimensions = self._workspace.shape
 
         self._interpolate_waypoints(smooth_window_len)
 
@@ -84,6 +73,16 @@ class GlowingParticles(Effect):
         t = self._workspace.current_time
         if not self._baked:
             self.bake()
+
+        self._hue = self.hue[t]
+        self._velocity_sd = self.velocity_sd[t]
+        self._particle_density = self.particle_density[t]
+        self._radius_pareto = self.radius_pareto[t]
+        self._radius_max = self.radius_max[t]
+        self._intensity_pareto = self.intensity_pareto[t]
+        self._intensity_max = self.intensity_max[t]
+        self._sample_which_potential = np.int(self.sample_which_potential[t])
+        self._purge = self.purge[t]
 
         # Figure out how many time steps we need to take
         num_steps = (t - self._current_time)
@@ -100,7 +99,7 @@ class GlowingParticles(Effect):
             self._purge_invisible()
 
         # Add or subtract particles so we have the desired number
-        target_num_particles = self.num_particles[t]
+        target_num_particles = np.int(self.num_particles[t])
         if target_num_particles < 0:
             target_num_particles = 0
         self._equalize_particles(target_num_particles)

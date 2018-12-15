@@ -18,7 +18,7 @@ characteristics.
    bake need not be defined.
 
    Any re-defined bake method must:
-   
+
      A. Run self._interpolate_waypoints and
      B. Set self._bake = True
      C. Have default values for all arguments, so it can be run as self.bake().
@@ -44,7 +44,8 @@ class Effect:
     The following paramters are defined here.
     t: time
     protect_mask: 2D array applied as an alpha mask to protect certain
-                  chunks of the image from exposure changes.
+                  chunks of the image from effect.  A value of 0 means have
+                  effect; a value of 255 means keep original frame.
     """
 
     def __init__(self,workspace):
@@ -203,6 +204,8 @@ class Effect:
         Protect some portion of the processed image with an original image.
         """
 
+        t = self._workspace.current_time
+
         if self.protect_mask[t] is not None:
 
             # Drop protection mask onto original image
@@ -212,18 +215,19 @@ class Effect:
             protect[:,:,:3] = pyfx.util.to_array(protect,
                                                  num_channels=3,
                                                  dtype=np.uint8)
-            protect[:,:,3] = self.protect_mask[t]
+            protect[:,:,3] = pyfx.util.to_array(self.protect_mask[t],
+                                                num_channels=1,
+                                                dtype=np.uint8)
 
             # Add an alpha channel to the new rgb value
             rgba = 255*np.ones((original_img.shape[0],original_img.shape[1],4),
                                dtype=np.uint8)
-            rgba[:,:,:3] = rgb
+            rgba[:,:,:3] = processed_img[:,:,:3]
 
             # Do alpha compositing
             out = pyfx.util.alpha_composite(rgba,protect)
 
-            # Drop alpha channel
-            return out[:,:,:3]
+            return out
 
         else:
             return processed_img

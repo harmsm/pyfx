@@ -28,7 +28,7 @@ It currently has a few features:
 
 ## TO DO
 
-1. Implement `Ghost` effect.
+1. ~~Implement `Ghost` effect.~~
 2. Implement `PictureInPicture` effect.
 3. Implement `Sparks`  effect and sprite.
 4. Make a `foreground_density` convenience function.
@@ -37,13 +37,13 @@ It currently has a few features:
    2. Add trajectory to physics
 
 6. ~~Implement workspace save/load~~
+7. Fix warnings thrown by FaceStack
+8. Check `bake` calls for all effects and see if any of the parameters should be moved into `waypoint` parameters.  (Why not make them accessible as handles vs. time? )
+9. Write unit tests, particularly for the `util`  functions. 
 
 ### Issues
 
 + Inconsistent x/y height/width coordinate nomenclature and conventions.
-+ 
-
-** Might have just broke glowing particles x/y orientation with shape change. **
 
 
 
