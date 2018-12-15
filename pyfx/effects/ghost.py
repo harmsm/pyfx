@@ -17,7 +17,7 @@ class Ghost(Effect):
                                   "num_apply":5,
                                   "decay_scalar":0.65,
                                   "hue":0.5,
-                                  "total_alpha":0.8}
+                                  "total_alpha":0.9}
 
         super().__init__(workspace)
 
@@ -26,6 +26,8 @@ class Ghost(Effect):
     def render(self,img):
 
         t = self._workspace.current_time
+        if not self._baked:
+            self.bake()
 
         # Make a black and white version of image, then flip back to RGB
         # with same color on all three channels

@@ -30,16 +30,16 @@ It currently has a few features:
 
 1. ~~Implement `Ghost` effect.~~
 2. Implement `PictureInPicture` effect.
-3. Implement `Sparks`  effect and sprite.
-4. Make a `foreground_density` convenience function.
-5. Implement Impact MetaEffect
-   1. Add impulse to physics
-   2. Add trajectory to physics
-
-6. ~~Implement workspace save/load~~
-7. Fix warnings thrown by FaceStack
-8. Check `bake` calls for all effects and see if any of the parameters should be moved into `waypoint` parameters.  (Why not make them accessible as handles vs. time? )
-9. Write unit tests, particularly for the `util`  functions. 
+3. Equilibrate particles after adding
+4. Fix problem loading saved workspace.
+5. Make a `foreground_density` convenience function. 
+6. Make a video frame writer convenience function.
+7. Implement `Sparks`  effect and sprite.
+8. Implement Impact MetaEffect
+9. ~~Implement workspace save/load~~
+10. Fix warnings thrown by FaceStack
+11. Check `bake` calls for all effects and see if any of the parameters should be moved into `waypoint` parameters.  (Why not make them accessible as handles vs. time? )
+12. Write unit tests, particularly for the `util`  functions. 
 
 ### Issues
 
