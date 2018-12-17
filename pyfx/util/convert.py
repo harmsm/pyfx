@@ -246,7 +246,10 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
         err = "number of channels must be 1, 3, or 4\n"
         raise ValueError(err)
 
-    out = np.zeros((a.shape[0],a.shape[1],num_channels),dtype=a.dtype)
+    if num_channels == 1:
+        out = np.zeros((a.shape[0],a.shape[1]),dtype=a.dtype)
+    else:
+        out = np.zeros((a.shape[0],a.shape[1],num_channels),dtype=a.dtype)
 
     # 1 input channel
     if len(a.shape) == 2:
@@ -263,22 +266,33 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
             if num_channels == 4:
                 out[:,:,3] = max_possible_value
 
-    # 3 or 4 input channels (or 1 channel loaded into a 3rd array dimension)
+    # 1, 2, 3 or 4 input channels (or 1 channel loaded into a 3rd array dimension)
     elif len(a.shape) == 3:
 
         # ... to 1 output channel
         if num_channels == 1:
-            bw = color.rgb2gray(a)
-            if dtype in INT_TYPES:
-                out = np.array(np.round(bw*255,0),dtype=dtype)
+
+            # 1 or 2 channels
+            if a.shape[2] == 1 or a.shape[2] == 2:
+                out[:,:] = a[:,:,0]
+
+            # 3 or 4 channels
+            elif a.shape[2] == 3 or a.shape[2] == 4:
+
+                bw = color.rgb2gray(a)
+                if dtype in INT_TYPES:
+                    out = np.array(np.round(bw*255,0),dtype=dtype)
+                else:
+                    out = np.array(bw,dtype=dtype)
             else:
-                out = np.array(bw,dtype=dtype)
+                err = "input array must have 1,2,3, or 4 channels.\n"
+                raise ValueError(err)
 
         # ... to 3 output channels
         elif num_channels == 3:
 
-            # 1 to 3
-            if a.shape[2] == 1:
+            # 1 to 3 or 2 to 3 (drop second alpha channel for 2 to 3)
+            if a.shape[2] == 1 or a.shape[2] == 2:
                 out[:,:,0] = a[:,:,0]
                 out[:,:,1] = a[:,:,0]
                 out[:,:,2] = a[:,:,0]
@@ -291,7 +305,7 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
             elif a.shape[2] == 4:
                 out[:,:,:3] = a[:,:,:3]
             else:
-                err = "matrix must have 1,3 or 4 many channels\n"
+                err = "matrix must have 1,2,3 or 4 channels\n"
                 raise ValueError(err)
 
         # ... to 4 output channels
@@ -304,8 +318,15 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
                 out[:,:,2] = a[:,:,0]
                 out[:,:,3] = max_possible_value
 
+            # 2 to 4  (treat second channel as alpha)
+            elif a.shape[2] == 2:
+                out[:,:,0] = a[:,:,0]
+                out[:,:,1] = a[:,:,0]
+                out[:,:,2] = a[:,:,0]
+                out[:,:,3] = a[:,:,1]
+
             # 3 to 4
-            if a.shape[2] == 3:
+            elif a.shape[2] == 3:
                 out[:,:,:3] = a[:,:,:3]
                 out[:,:,3] = max_possible_value
 
@@ -313,7 +334,7 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
             elif a.shape[2] == 4:
                 out = a
             else:
-                err = "matrix must have 1,3 or 4 many channels\n"
+                err = "matrix must have 1,2,3 or 4 channels\n"
                 raise ValueError(err)
 
     return out
@@ -342,6 +363,7 @@ def _float_to_int(a,dtype=np.uint8,zero_tolerance=1e-6):
         # If we're still outside bounds, throw error
         if np.min(b) < 0 or np.max(b) > 1:
             err = "float array must have values between 0 and 1\n"
+            err += "array min: {}, array max: {}\n".format(np.min(b),np.max(b))
             raise ValueError(err)
 
     if dtype not in INT_TYPES:
@@ -373,6 +395,7 @@ def _int_to_float(a,dtype=np.float):
         # If that still didn't fix it, throw an error
         if np.min(b) < 0 or np.max(b) > 255:
             err = "int array must have values between 0 and 255\n"
+            err += "array min: {}, array max: {}\n".format(np.min(b),np.max(b))
             raise ValueError(err)
 
     if dtype not in FLOAT_TYPES:
