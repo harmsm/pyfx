@@ -6,7 +6,7 @@ from . import processors
 from . import util
 from . import visuals
 
-from .workspace import Workspace
+from ._workspace import Workspace
 
 import os
 root_dir = os.path.dirname(os.path.abspath(__file__))

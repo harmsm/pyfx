@@ -86,7 +86,8 @@ class DiffPotential(Processor):
         """
 
         # If the last potential retrieved was this one, don't reload
-        if self._workspace.current_time == self._last_retrieved_t:
+        if self._workspace.current_time == self._last_retrieved_t and \
+           self._last_retrieved_pot is not None:
             return
 
         if not self._baked:
@@ -98,7 +99,9 @@ class DiffPotential(Processor):
 
         # If already calculated, return
         if os.path.isfile(pot_file):
-            return pickle.load(open(pot_file,"rb"))
+            self._last_retrieved_t = t
+            self._last_retrieved_pot = pickle.load(open(pot_file,"rb"))
+            return
 
         print("calculating potential surface for frame {}".format(t))
         diff_smooth = self._workspace.background.smooth_diff(self._img_files[t],

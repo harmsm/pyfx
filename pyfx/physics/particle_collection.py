@@ -25,6 +25,7 @@ class ParticleCollection:
                  radius_max=5,
                  sample_which_potential=0,
                  purge=True,
+                 num_equilibrate_steps=0,
                  sprite_generator=None):
         """
         num_particles: number of particles to add
@@ -43,6 +44,8 @@ class ParticleCollection:
                                 is no potential loaded, also sample randomly.
         purge: whether or not to purge invisible particles and replace them to
                keep the number of particles constant.
+        num_equilibrate_steps: number of steps to equilibrate each particle
+                               after adding.
         sprite_generator: SpriteGenerator instance for creating new sprites.
                           If None, do not generate sprites
         """
@@ -56,6 +59,7 @@ class ParticleCollection:
         self._radius_max = radius_max
         self._sample_which_potential = sample_which_potential
         self._purge = purge
+        self._num_equilibrate_steps = num_equilibrate_steps
         self._sprite_generator = sprite_generator
 
         self._particles = []
@@ -86,6 +90,10 @@ class ParticleCollection:
         # Generate a physical particle
         p = pyfx.physics.Particle(coord,velocity=velocity,radius=radius,
                                   density=self._particle_density)
+
+        # Equilibrate particle, if requested
+        if self._num_equilibrate_steps > 0:
+            self.apply_forces(p,num_steps=self._num_equilibrate_steps)
 
         sprite = None
         if self._sprite_generator is not None:
@@ -243,3 +251,11 @@ class ParticleCollection:
     @purge.setter
     def purge(self,purge):
         self._purge = bool(purge)
+
+    @property
+    def num_equilibrate_steps(self):
+        return self._num_equilibrate_steps
+
+    @num_equilibrate_steps.setter
+    def num_equilibrate_steps(self,num_equilibrate_steps):
+        self._num_equilibrate_steps = int(num_equilibrate_steps)

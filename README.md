@@ -29,8 +29,8 @@ It currently has a few features:
 
 1. ~~Implement `Ghost` effect.~~
 2. ~~Implement `PictureInPicture` effect.~~
-3. Equilibrate particles after adding
-4. Fix problem loading saved workspace.
+3. ~~Equilibrate particles after adding~~
+4. ~~Fix problem loading saved workspace.~~
 5. ~~Make a `foreground_density` convenience function.~~  
 6. ~~Make a video frame writer convenience function.~~
 7. ~~Clean up particle_collection class.~~  Implement `Sparks`  effect and sprite.

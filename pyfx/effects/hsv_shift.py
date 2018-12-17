@@ -74,7 +74,7 @@ class HSVShift(Effect):
                 out = rgb
             else:
                 out = np.zeros(img.shape,dtype=img.dtype)
-                out[:,:,:3] = rgb
+                out[:,:,:3] = rgb[:,:,:3]
                 out[:,:,3] = alpha
 
         return out

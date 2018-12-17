@@ -50,6 +50,7 @@ class GlowingParticles(Effect):
                                   "intensity_pareto":1.0,
                                   "intensity_max":10,
                                   "sample_which_potential":0,
+                                  "num_equilibrate_steps":0,
                                   "purge":True}
 
         super().__init__(workspace)
@@ -78,6 +79,7 @@ class GlowingParticles(Effect):
                                                        radius_max=self.radius_max[0],
                                                        sample_which_potential=self.sample_which_potential[0],
                                                        purge=self.purge[0],
+                                                       num_equilibrate_steps=self.num_equilibrate_steps[0],
                                                        sprite_generator=self._sprite_generator)
         self._baked = True
 
@@ -102,6 +104,7 @@ class GlowingParticles(Effect):
         self._particle_collection.radius_max = self.radius_max[t]
         self._particle_collection.sample_which_potential = np.int(self.sample_which_potential[t])
         self._particle_collection.purge = self.purge[t]
+        self._particle_collection.num_equilibrate_steps = self.num_equilibrate_steps[t]
 
         # Figure out how many time steps we need to take
         num_steps = (t - self._current_time)

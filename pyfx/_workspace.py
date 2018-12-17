@@ -67,6 +67,12 @@ class Workspace:
         if time_interval is None:
             time_interval = (0,self._max_time + 1)
 
+        # Negative slicing
+        if time_interval[1] < 0:
+            new_interval = [time_interval[0]]
+            new_interval.append(self.max_time + 1 + time_interval[1])
+            time_interval = tuple(new_interval)
+
         # Do some quick sanity checking -- were the effects all created
         # using this workspace?
         for e in effects:
@@ -114,10 +120,10 @@ class Workspace:
         if self._bg_frame is None:
             self._bg_frame = 127*np.ones((self.shape[0],self.shape[1],4),
                                          dtype=np.uint8)
-            self._bg_frame = bg[:,:,3] = 255
+            self._bg_frame[:,:,3] = 255
 
         # Convert to an array
-        self._bg_frame = pyfx.util.to_array(bg_frame,
+        self._bg_frame = pyfx.util.to_array(self._bg_frame,
                                             num_channels=4,
                                             dtype=np.uint8)
 
