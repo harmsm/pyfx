@@ -44,7 +44,7 @@ class HumanFaces(Processor):
 
         self._img_list = []
         for t in self._workspace.times:
-            self._img_list.append(self._workspace.get_frame(t,as_file=True))
+            self._img_list.append(self._workspace.get_frame(t))
 
         if os.path.isfile(out_file):
             f = open(out_file,'rb')

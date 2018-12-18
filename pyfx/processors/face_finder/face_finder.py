@@ -1,11 +1,11 @@
+import pyfx
+
 import dlib
 import numpy as np
-from skimage import draw, util, color
+from skimage import draw
 from scipy import spatial, interpolate
 
-from PIL import Image
-
-import copy, string, random, os, warnings
+import copy, string, random, os
 
 class FaceFinder:
     """
@@ -24,11 +24,6 @@ class FaceFinder:
         """
         Detect facial landmarks given a black and white image.
         """
-
-        # Make sure this is in a 0-255 single channel format
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            bw_array = util.img_as_ubyte(bw_array)
 
         # Search for faces
         faces = self._detector(bw_array, 1)
@@ -243,7 +238,7 @@ def find_face_stacks(img_list,
     """
     Return a list of FaceStack instances extracted from a series of images.
 
-    img_list: list of single-channel images or list of image files
+    img_list: list of images readable by pyfx
     training_data: file containing dlib training data for finding faces
     max_time_gap: maximum time over which two similar faces are considered
                   the same without observing the face at intermediate times
@@ -264,13 +259,10 @@ def find_face_stacks(img_list,
     stale_faces = []
     for t, img in enumerate(img_list):
 
-        # If image list is full of strings, load image from file
-        if type(img) is str:
-            f = np.array(Image.open(img))
-            img = color.rgb2gray(f)
+        this_img = pyfx.util.to_array(img,num_channels=1,dtype=np.uint8)
 
         # Look for faces in this image
-        new_faces = detector.detect(img)
+        new_faces = detector.detect(this_img)
         if len(new_faces) == 0:
             continue
 

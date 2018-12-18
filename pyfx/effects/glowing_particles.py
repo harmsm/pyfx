@@ -55,7 +55,7 @@ class GlowingParticles(Effect):
 
         super().__init__(workspace)
 
-    def bake(self,smooth_window_len=30):
+    def bake(self,smooth_window_len=0):
         """
         smooth_window_len: length of window for interpolation
         """

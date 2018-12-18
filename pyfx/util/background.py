@@ -9,23 +9,24 @@ class Background:
     Class to measure difference between each frame and a background frame.
     """
 
-    def __init__(self,bg_file,blur_sigma=10):
+    def __init__(self,bg_frame,blur_sigma=10):
 
-        self._bg_file = bg_file
+        self._bg_frame = bg_frame
         self._blur_sigma = blur_sigma
 
-        self._bg_img = pyfx.util.to_image(bg_file)
+        self._bg_img = pyfx.util.to_image(bg_frame)
 
-        self._bg_array_color = pyfx.util.to_array(self._bg_img,num_channels=3,dtype=np.float)
-        self._bg_array_bw = pyfx.util.to_array(self._bg_img,num_channels=1,dtype=np.float)
+        self._bg_array_color = pyfx.util.to_array(self._bg_frame,num_channels=3,dtype=np.float)
+        self._bg_array_bw = pyfx.util.to_array(self._bg_frame,num_channels=1,dtype=np.float)
         self._bg_array_blur = filters.gaussian(self._bg_array_bw,self._blur_sigma)
-        self._bg_out = pyfx.util.to_array(self._bg_img,num_channels=4,dtype=np.uint8)
+        self._bg_out = pyfx.util.to_array(self._bg_frame,num_channels=4,dtype=np.uint8)
 
-    def frame_diff(self,img_file):
+    def frame_diff(self,img):
         """
+        Return differnce between img and background.
         """
 
-        img_array_bw = pyfx.util.to_array(img_file,dtype=np.float,num_channels=1)
+        img_array_bw = pyfx.util.to_array(img,dtype=np.float,num_channels=1)
         img_array_blur = filters.gaussian(img_array_bw,sigma=self._blur_sigma)
 
         total_diff, diff_array = measure.compare_ssim(img_array_blur,
@@ -35,7 +36,7 @@ class Background:
         return 1 - diff_array
 
     def smooth_diff(self,
-                    img_file,
+                    img,
                     threshold=0.2,
                     num_iterate=20,
                     dilation_interval=2,
@@ -46,7 +47,7 @@ class Background:
         and the background.  Calculate using a series of expanding dilations.
         This is pretty darn slow, unfortunately.
 
-        img_file: image file
+        img: image in format recognized by pyfx
         threshold: difference between the frame and background that is called
                    as different
         num_iterate: how many times to iterate the dilation
@@ -55,7 +56,7 @@ class Background:
         blur: how much to blur final result (gaussian sigma)
         """
 
-        frame_diff = self.frame_diff(img_file)
+        frame_diff = self.frame_diff(img)
         disk = morphology.disk(disk_size)
 
         bool_cut = np.zeros(frame_diff.shape,dtype=np.bool)

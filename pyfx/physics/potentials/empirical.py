@@ -10,6 +10,10 @@ class Empirical(Potential):
     def __init__(self,obs_potential,kT=1):
 
         self._dimensions = np.copy(obs_potential.shape)
+        if len(self._dimensions) != 2:
+            err = "only two-dimensional arrays supported\n"
+            raise ValueError(err)
+
 
         super().__init__(kT)
 
@@ -46,7 +50,7 @@ class Empirical(Potential):
         """
 
         # The weights have not been calculated for this potential -- calculate
-        # them. 
+        # them.
         if self._w is None:
             self._w = np.exp(-self._obs_potential/self._kT)
             self._p = np.ravel(self._w)/np.sum(self._w)

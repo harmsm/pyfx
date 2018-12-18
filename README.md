@@ -1,21 +1,70 @@
 # pyfx
 
-Python library for adding visual effects to video streams.  This is a personal
-project, rather than an attempt to build a real production tool.  It's built on libraries such as
-[skimage](https://scikit-image.org/), [pillow](https://pillow.readthedocs.io/),
-[dlib](http://dlib.net/) and (of course)
-[numpy](http://www.numpy.org/)/[scipy](https://www.scipy.org/).
+Python library for adding visual effects to video streams. It's built on libraries such as
+[skimage](https://scikit-image.org/), [pillow](https://pillow.readthedocs.io/), [dlib](http://dlib.net/), [numpy](http://www.numpy.org/), and [scipy](https://www.scipy.org/).
+
+### Workflow
+
+```python
+import pyfx
+ws = pyfx.Workspace("workspace.pyfx",source)
+
+# Add effects here...
+
+ws.render(output)
+```
+
+
+
+The following working code loads a video stream and, over the first 5 frames, pans left-to-right 100 pixels, rotates 3-degrees clockwise, and adds camera shake. 
+
+```python
+import pyfx
+
+ws = pyfx.Workspace(name,source)
+
+vc = pyfx.effects.VirtualCamera(ws)
+vc.add_waypoint(5,x=100,theta=-3,shaking_magnitude=10)
+vc.bake()
+
+ws.render(output,(vc,))
+```
+
+Effects can be applied in serial as a pipeline.  The following code adds flickering exposure to the existing shot. 
+
+```python
+import pyfx
+import random
+
+ws = pyfx.Workspace(name,source)
+
+vc = pyfx.effects.VirtualCamera(ws)
+vc.add_waypoint(5,x=100,theta=-3,shaking_magnitude=10)
+vc.bake()
+
+hsv = pyfx.effects.HSVShift(ws)
+hsv.add_waypoint()
+for i in range(30):
+    hsv.add_waypoint(i,value=random.random())
+hsv.bake()
+
+
+ws.render(output,(vc,hsv))
+```
+
+
+
+
+
+
 
 It currently has a few features:
 
-+ Simple physics calculated for particles.  These can be placed on a variety
-  of potential surfaces, allowing them to evolve over time.
-+ A class that uses dlib to find facial features and track them over frames.  
-  This lets you add fun effects like glowing eyes.
-+ A Sprite class that lets you decorate things like particles and write them
-  to images in a coherent way.
-+ A class that identifies foreground pixels.
-+ Some styling to create ghost and halo effects.  
++ Good stuff under the hood:
+  + `Effect` base class that can be extended to generate arbitrarily complicated time-aware visual effects.  
+  +  `Sprite` class that can be used to define new visuals to attach to particles.
+  + Simple physics, particles and ability to load in images as potential surfaces
+  + A `Background` class that allows ready identification of foreground and background pixels
 
 ####  Design choices:
 
@@ -27,19 +76,12 @@ It currently has a few features:
 
 ## TO DO
 
-1. ~~Implement `Ghost` effect.~~
-2. ~~Implement `PictureInPicture` effect.~~
-3. ~~Equilibrate particles after adding~~
-4. ~~Fix problem loading saved workspace.~~
-5. ~~Make a `foreground_density` convenience function.~~  
-6. ~~Make a video frame writer convenience function.~~
-7. ~~Clean up particle_collection class.~~  Implement `Sparks`  effect and sprite.
-8. Implement Impact MetaEffect
-9. ~~Implement workspace save/load~~
-10. Integrate with ffmpeg???
-11. Fix warnings thrown by FaceStack
-12. Check `bake` calls for all effects and see if any of the parameters should be moved into `waypoint` parameters.  (Why not make them accessible as handles vs. time? )
-13. Write unit tests, particularly for the `util`  functions. 
+1. Write integrated photonzombie effect. 
+2. Implement `Sparks`  effect and sprite.
+3. Integrate with ffmpeg???
+4. Fix warnings thrown by FaceStack
+5. Check `bake` calls for all effects and see if any of the parameters should be moved into `waypoint` parameters.  (Why not make them accessible as handles vs. time? )
+6. Write unit tests, particularly for the `util`  functions. 
 
 ### Issues
 

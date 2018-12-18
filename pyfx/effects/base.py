@@ -91,7 +91,7 @@ class Effect:
         self._waypoints[0] = copy.copy(self._default_waypoint)
         self._baked = False
 
-    def bake(self,smooth_window_len=30):
+    def bake(self,smooth_window_len=0):
         """
         Can be redefined in subclass.  Note: be careful calling this with
         super().bake(), as this will set the internal status of self._bake
@@ -232,7 +232,7 @@ class Effect:
         else:
             return processed_img
 
-    def _interpolate_waypoints(self,window_len=30):
+    def _interpolate_waypoints(self,window_len=0):
         """
         Interpolate between the waypoint values specified by the user.  Load
         the interpolated values into arrays that are class attributes.  (e.g.,

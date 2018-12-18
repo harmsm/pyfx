@@ -51,7 +51,7 @@ class VirtualCamera(Effect):
         super().__init__(workspace)
 
 
-    def bake(self,max_expand=1.5,smooth_window_len=30):
+    def bake(self,max_expand=1.5,smooth_window_len=0):
         """
         Pre-calculate all of the camera moves in the waypoints.
 
@@ -172,35 +172,12 @@ class VirtualCamera(Effect):
         holder.
         """
 
-        # Model the camera as a langevin particle being buffetted by kT
-        p = pyfx.physics.Particle()
-        harmonic = pyfx.physics.potentials.Spring1D(spring_constant=self.shaking_stiffness[0])
-        langevin = pyfx.physics.potentials.Random(force_sd=self.shaking_magnitude[0])
+        x, y = pyfx.util.harmonic_langenvin(len(self.t),
+                                            self.shaking_stiffness,
+                                            self.shaking_magnitude)
 
-        # Let it wander around the potential surface
-        x = []
-        y = []
-        for t in self.t:
+        return x, y
 
-            # Update harmonic and langevin with new shaking parameters
-            harmonic.update(spring_constant=self.shaking_stiffness[t])
-            langevin.update(force_sd=self.shaking_magnitude[t])
-
-            # Farthest we can go in any direction is three standard deviations
-            # in kT away from center
-            max_shake = int(round(3*self.shaking_magnitude[t]))
-
-            h = harmonic.get_forces(p.coord)
-            l = langevin.get_forces(p.coord)
-            p.advance_time(h + l)
-
-            p.coord[p.coord < -max_shake] = -max_shake
-            p.coord[p.coord >  max_shake] =  max_shake
-
-            x.append(p.coord[0])
-            y.append(p.coord[1])
-
-        return np.array(x), np.array(y)
 
     def _calc_total_crop(self,width,height):
         """

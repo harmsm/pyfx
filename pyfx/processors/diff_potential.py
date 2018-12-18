@@ -73,7 +73,7 @@ class DiffPotential(Processor):
             if t % self._params["update_interval"] == 0 or current_file is None:
                 current_file = os.path.join(self._processor_dir,
                                             fmt_string.format(t))
-                current_image = self._workspace.get_frame(t,as_file=True)
+                current_image = self._workspace.get_frame(t)
 
             self._potential_files[t] = current_file
             self._img_files[t] = current_image

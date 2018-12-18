@@ -70,7 +70,7 @@ class GlowingParticle(Sprite):
         # Create mini array to draw object
         size = self._radius*(self._expansion_factor**(self._num_rings - 1)) + 3
         self._size = int(np.ceil(size))
-        img = np.zeros((2*self._size + 1,2*self._size + 1),dtype=np.float)
+        img = np.zeros((2*self._size + 3,2*self._size + 3),dtype=np.float)
 
         # Find center of mini array for drawing
         center = self._size

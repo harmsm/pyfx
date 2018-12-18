@@ -21,7 +21,7 @@ class GlowingEyes(Effect):
              p_cutoff=0.9,
              real_cutoff=100,
              min_time_visible=5,
-             smooth_window_len=30):
+             smooth_window_len=0):
 
         self._human_faces = pyfx.processors.HumanFaces(self._workspace,
                                                        training_data,

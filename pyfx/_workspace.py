@@ -55,10 +55,7 @@ class Workspace:
 
         # Make the output directory
         if os.path.isdir(out_dir):
-            if overwrite:
-                shutil.rmtree(out_dir)
-                os.mkdir(out_dir)
-            else:
+            if not overwrite:
                 err = "output directory {} exists\n".format(out_dir)
                 raise FileExistsError(err)
         else:
@@ -122,6 +119,10 @@ class Workspace:
                                          dtype=np.uint8)
             self._bg_frame[:,:,3] = 255
 
+        # If the background frame is specified as an integer, take that
+        if type(bg_frame) in [int,np.int]:
+            self._bg_frame = self.get_frame(self.bg_frame)
+
         # Convert to an array
         self._bg_frame = pyfx.util.to_array(self._bg_frame,
                                             num_channels=4,
@@ -132,14 +133,10 @@ class Workspace:
 
         self._save()
 
-    def get_frame(self,t,as_file=False):
+    def get_frame(self,t):
         """
-        Get the frame at time t.  Return as an array unless as_file is True,
-        in which case return a string pointing to the filename.
+        Get the frame at time t.  Return as an array.
         """
-
-        if as_file:
-            return self._img_list[t]
 
         return pyfx.util.to_array(self._img_list[t],dtype=np.uint8,
                                   num_channels=4)
@@ -218,8 +215,7 @@ class Workspace:
 
             # Parse a video file
             elif os.path.isfile(self._src):
-                err = "input appears to be a video file -- not implemented yet\n"
-                raise NotImplementedError(err)
+                self._img_list = pyfx.util.video_to_array(self._src)
 
             # Error
             else:
