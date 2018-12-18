@@ -25,7 +25,7 @@ class GlowingParticle(Sprite):
         alpha_decay: multiply alpha by this value for each new ring
         """
 
-        if radius <= 0:
+        if radius < 0:
             err = "radius must be positive\n"
             raise ValueError(err)
         self._radius = radius
@@ -113,8 +113,8 @@ class GlowingParticle(Sprite):
     @radius.setter
     def radius(self,radius):
 
-        if radius <= 0:
-            err = "radius must be larger than zero\n"
+        if radius < 0:
+            err = "radius must be positive\n"
             raise ValueError(err)
 
         if self._radius != radius:

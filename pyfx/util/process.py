@@ -1,3 +1,5 @@
+import pyfx
+
 import numpy as np
 
 def smooth(x,window_len=0):
@@ -109,7 +111,7 @@ def harmonic_langenvin(num_steps,
 
         # If no bound is specified, the farthest we can go in any direction is
         # three standard deviations in sqrt(kT) away from center
-        if max_shake[i] is None:
+        if max_value[i] is None:
             bound = int(round(3*force_sd[i]))
         else:
             bound = max_shake[i]

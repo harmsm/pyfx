@@ -9,6 +9,8 @@ __date__ = "2018-12-14"
 import pyfx
 from .base import Effect
 
+import skimage
+
 import numpy as np
 
 import os, glob
@@ -124,7 +126,8 @@ class PictureInPicture(Effect):
 
             if self.pip_scale[t] != 1.0:
 
-                rescaled = skimage.transform.rescale(pip,self.pip_scale[t])
+                rescaled = skimage.transform.rescale(pip,self.pip_scale[t],
+                                                     multichannel=True)
 
                 diff_x = abs(rescaled.shape[0] - img.shape[0])
                 crop_x = (diff_x//2,diff_x//2 + diff_x % 2)
@@ -137,8 +140,9 @@ class PictureInPicture(Effect):
                 else:
                     pip = pyfx.util.expand(rescaled,crop_x,crop_y)
 
+            final_alpha = np.round(self.alpha[t]*(255 - self.picture_mask[t]),0)
             masked_img = pyfx.util.to_array(img,num_channels=4,dtype=np.uint8)
-            masked_img[:,:,3] = 255 - self.picture_mask[t]
+            masked_img[:,:,3] = final_alpha
 
             pip[:,:,3] = 255
 
