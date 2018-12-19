@@ -9,7 +9,7 @@ import pyfx
 from PIL import ImageDraw, ImageFont
 import numpy as np
 
-import sys, shutil, random, string, os
+import sys, shutil, random, string, os, warnings
 
 def foreground_mask(workspace,time_interval=(0,-1),threshold=0.1):
     """
@@ -118,3 +118,59 @@ def number_frames(workspace,out_dir,overwrite=False):
 
         out_file = os.path.join(out_dir,fmt_string.format(t) + ".png")
         pyfx.util.to_file(img,out_file)
+
+def kelvin_to_rgb(T):
+    """
+    Hacked, empirical way to go from a color temperature in Kelvin to
+    the RGB value for the white point. Approximately valid between
+    1000-40000 K.  Returns a numpy array of R,G,B in 0-255 format.
+
+    Lifted from:
+    http://www.tannerhelland.com/4435/convert-temperature-rgb-algorithm-code/
+    """
+
+    if T < 1000 or T > 40000:
+        warnings.warn("T value outside of valid range (1000 to 40000 K)\n"
+
+    T = T/100.0
+
+    if T <= 66:
+        r = 255
+        g = 99.4708025861*np.log(T) - 161.1195681661
+        if T <= 19:
+            b = 0
+        else:
+            b = 138.5177312231*np.log(T - 10) - 305.0447927307
+    else:
+        r = 329.698727446*((T - 60)**(-0.1332047592))
+        g = 288.122169528*((T - 60)**(-0.0755148492))
+        b = 255
+
+    r = int(round(r))
+    g = int(round(g))
+    b = int(round(b))
+
+    # Fix bounds
+    if r < 0: r = 0
+    if r > 255: r = 255
+    if g < 0: b = 0
+    if g > 255: b = 255
+    if b < 0: b = 0
+    if b > 255: b = 255
+
+    return np.array([r,g,b],dtype=np.uint8)
+
+
+def color_temperature(img,T):
+
+
+
+
+
+– Calculate temperature RGB
+– Loop through the image one pixel at a time. For each pixel:
+— Get RGB values
+— Calculate luminance of those RGB values (Luminance = (Max(R,G,B) + Min(R,G,B)) / 2)
+— Alpha-blend the RGB values with the temperature RGB values at the requested strength (max strength = 50/50 blend)
+— Calculate HSL equivalents for the newly blended RGB values
+— Convert those HSL equivalents back to RGB, but substitute the ORIGINAL luminance value (this maintains the luminance of the pixel)

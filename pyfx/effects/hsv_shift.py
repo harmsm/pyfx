@@ -5,23 +5,30 @@ from skimage import color
 
 import numpy as np
 
-class HSVShift(Effect):
+class ColorShift(Effect):
     """
-    Apply fluctuating changes in hue, saturation, and value across a collection
-    of video frames.
+    Apply fluctuating changes in hue, saturation, value and/or color temperature
+    across a collection of video frames.  HSV is altered first, followed by
+    color temperature.
 
     Waypoint properties:
 
     hue: float from 0 to 1. If negative, do not change hue.
     saturation: float from 0 to 1.  If negative, do not change saturation.
     value: float from 0 to 1.  If negative, do not change value.
+    temperature: color temperature, in Kelvin, to mix in.  If negative, do
+                 nothing.
+    temperature_mix_value: float from 0 to 1.  How much to of the new color
+                           temperature to mix into the original image.
     """
 
     def __init__(self,workspace):
 
         self._default_waypoint = {"hue":-1.0,
                                   "saturation":-1.0,
-                                  "value":-1.0}
+                                  "value":-1.0,
+                                  "temperature":-1.0,
+                                  "temperature_mix_value":0.5}
 
         super().__init__(workspace)
 
@@ -86,18 +93,36 @@ class HSVShift(Effect):
 
         # Apply hue, saturation, value transformations to hsv
         if self.hue[t] >= 0:
-            hsv[:,:,0] = hsv[:,:,0]*self.hue[t]
+            hsv[:,:,0] = self.hue[t]
 
         if self.saturation[t] >= 0:
-            hsv[:,:,1] = hsv[:,:,1]*self.saturation[t]
+            hsv[:,:,1] = self.saturation[t]
 
         if self.value[t] >= 0:
-            hsv[:,:,2] = hsv[:,:,2]*self.value[t]
+            hsv[:,:,2] = self.value[t]
 
         # Convert back to rgb
         rgb = pyfx.util.to_array(color.hsv2rgb(hsv),
                                  dtype=np.uint8,
                                  num_channels=3)
+
+
+        # Apply tempreature
+        if self.temperature[t] > 0:
+
+            mix_value = np.int(np.round(255*self.temperature_mix_value[t]))
+
+            T = np.zeros((rgb.shape[0],rgb.shape[1],4),dtype=np.uint8)
+            T[:,:,:3] = pyfx.util.helper.kelvin_to_rgb(self.temperature[t])
+            T[:,:,3] = mix_value
+
+            rgba = pyfx.util.to_array(rgb,num_channels=4)
+            rgb[:,:,3] = 255 - mix_value
+
+            # Form alpha composite with new color temperature
+            mixed = pyfx.util.alpha_composite(rgba,T)
+
+            rgb = mixed[:,:,:3]
 
         # Protect masked portions of the input image
         rgb = self._protect(img,rgb)
