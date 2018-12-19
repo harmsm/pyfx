@@ -29,6 +29,7 @@ class MixForeAndBack(Effect):
         if not self._baked:
             self.bake()
 
+        new_img = img
         if self.mask[t] is not None:
 
             # Make sure mask is a single channel array
@@ -38,6 +39,7 @@ class MixForeAndBack(Effect):
             fg = pyfx.util.to_array(img,num_channels=4,dtype=np.uint8)
             fg[:,:,3] = self.mask[t]*self.alpha[t]
 
-            return pyfx.util.alpha_composite(bg,fg)
+            new_img = pyfx.util.alpha_composite(bg,fg)
+            new_img = self._protect(img,new_img)
 
-        return img
+        return new_img

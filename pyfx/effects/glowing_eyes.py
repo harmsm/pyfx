@@ -45,6 +45,10 @@ class GlowingEyes(Effect):
 
             for i in range(len(rt)):
 
+                # make sure radius does not end up negaitve due to numerical
+                # error
+                if rc[i,2] < 0: rc[i,2] = 0.0
+
                 # Right eye coordinates (x, y, r)
                 to_write = (rc[i,1],rc[i,0],rc[i,2])
                 try:
@@ -59,6 +63,10 @@ class GlowingEyes(Effect):
 
             for i in range(len(lt)):
 
+                # make sure radius does not end up negaitve due to numerical
+                # error
+                if lc[i,2] < 0: lc[i,2] = 0.0
+
                 # Left eye coordinates (x, y, r)
                 to_write = (lc[i,1],lc[i,0],lc[i,2])
                 try:
@@ -67,6 +75,9 @@ class GlowingEyes(Effect):
                     self._left_eye_coord[lt[i]] = [to_write]
 
         self._interpolate_waypoints(smooth_window_len)
+
+        # make sure interpolated eye scalar does not end up negative
+        self.eye_scalar[self.eye_scalar < 0] = 0.0
 
         self._baked = True
 

@@ -86,6 +86,7 @@ It currently has a few features:
 ### Issues
 
 + Inconsistent x/y height/width coordinate nomenclature and conventions.
++ Inconsistent masking conventions. (background/preserve should be 0; foreground/change should be 255)
 
 
 

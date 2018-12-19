@@ -110,6 +110,7 @@ class GlowingParticles(Effect):
         num_steps = (t - self._current_time)
         if num_steps < 0:
             err = "time cannot run backwards for this effect\n"
+            err += "(try baking again before running.)\n"
             raise ValueError(err)
         self._current_time = t
 
