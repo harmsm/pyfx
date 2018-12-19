@@ -130,7 +130,7 @@ def kelvin_to_rgb(T):
     """
 
     if T < 1000 or T > 40000:
-        warnings.warn("T value outside of valid range (1000 to 40000 K)\n"
+        warnings.warn("T value outside of valid range (1000 to 40000 K)\n")
 
     T = T/100.0
 
@@ -160,17 +160,56 @@ def kelvin_to_rgb(T):
 
     return np.array([r,g,b],dtype=np.uint8)
 
+def channel_stretch(img,cutoff=0.005):
+    """
+    Independently stretch the RGB values so they range from 0 to 255.  Tosses
+    the highest and lowest 0.005 of pixel values to avoid bias from outlier
+    points.  This follows description of the algorithm used by the GIMP for
+    white balance. (https://docs.gimp.org/2.10/en/gimp-layer-white-balance.html)
+    """
 
-def color_temperature(img,T):
+    rgb = pyfx.util.to_array(img,num_channels=3,dtype=np.uint8)
 
+    for i in range(3):
 
+        # Grab the values of the top and bottom cutoff-th percentiles
+        # for the channel
+        h = np.histogram(rgb[:,:,i],bins=range(257))
+        cumsum = np.cumsum(h[0]/np.sum(h[0]))
+        bottom = np.min(h[1][:-1][cumsum > cutoff])
+        top = np.max(h[1][:-1][cumsum < (1 - cutoff)])
 
+        # Normalize the channel value to these top and bottom values
+        normalized = (rgb[:,:,i] - bottom)/(top - bottom)
 
+        # Whack any values that are outside of 0 to 1 after normalization
+        normalized[normalized > 1] = 1.0
+        normalized[normalized < 0] = 0.0
 
-– Calculate temperature RGB
-– Loop through the image one pixel at a time. For each pixel:
-— Get RGB values
-— Calculate luminance of those RGB values (Luminance = (Max(R,G,B) + Min(R,G,B)) / 2)
-— Alpha-blend the RGB values with the temperature RGB values at the requested strength (max strength = 50/50 blend)
-— Calculate HSL equivalents for the newly blended RGB values
-— Convert those HSL equivalents back to RGB, but substitute the ORIGINAL luminance value (this maintains the luminance of the pixel)
+        # Load back into the rgb image
+        rgb[:,:,i] = np.round(255*normalized,0)
+
+    return rgb
+
+def adjust_white_balance(img,white_point=(255,255,255)):
+    """
+    Given an RGB value that is defined as actual white (on 0-255 scale),
+    transform pixels in image to adjust white balance.
+    """
+
+    try:
+        if len(white_point) != 3:
+            raise TypeError
+    except TypeError:
+        err = "white point should be a list/tuple/array with 3 values\n"
+        raise ValueError(err)
+
+    white_point = np.array(white_point,dtype=np.float)
+    transform_matrix = (255/white_point)*np.eye((3))
+
+    new_img = np.dot(img,transform_matrix)
+    new_img[np.isnan(new_img)] = 0
+    new_img[new_img > 255] = 255
+    new_img[new_img < 0] = 0
+
+    return np.array(np.round(new_img),dtype=np.uint8)

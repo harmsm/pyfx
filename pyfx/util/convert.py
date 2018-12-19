@@ -51,6 +51,19 @@ def to_array(img,dtype=np.uint8,num_channels=4):
 
     # Convert between array types
     elif type(img) is np.ndarray:
+
+        # Don't do a conversion if this is already an ndarray with the correct
+        # dimensions and data type
+        if img.dtype == dtype:
+            if num_channels == 1:
+                if len(img.shape) == 2:
+                    return img
+            else:
+                if len(img.shape) == 3 and img.shape[2] == num_channels:
+                    return img
+
+        # If we get here, we're going to need to convert the array to a
+        # different type.
         if img.dtype in INT_TYPES:
             if dtype in FLOAT_TYPES:
                 out = _int_to_float(img,dtype=dtype)
@@ -78,7 +91,7 @@ def to_image(img):
     img: string with file, numpy.ndarray, or PIL.Image instance.
     """
 
-    # Redad from file
+    # Read from file
     if type(img) is str:
         return _from_file(img,return_array=False)
 

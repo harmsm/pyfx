@@ -28,7 +28,7 @@ class ColorShift(Effect):
                                   "saturation":-1.0,
                                   "value":-1.0,
                                   "temperature":-1.0,
-                                  "temperature_mix_value":0.5}
+                                  "white_point":None}
 
         super().__init__(workspace)
 
@@ -73,56 +73,43 @@ class ColorShift(Effect):
         if not self._baked:
             self.bake()
 
-        # Convert to hsv
+        # Save the alpha channel if it exists
         alpha = None
-        if len(img.shape) == 2:
-            hsv = color.rgb2hsv(color.gray2rgb(img))
-        elif len(img.shape) == 3:
-            if img.shape[2] == 3:
-                hsv = color.rgb2hsv(img)
-            elif img.shape[2] == 4:
-                # Save the alpha channel if it exists
-                alpha = img[:,:,3]
-                hsv = color.rgb2hsv(img[:,:,:3])
-            else:
-                err = "input image should be grayscale, RGB, or RGBA\n"
-                raise ValueError(err)
-        else:
-            err = "input image should be grayscale, RGB, or RGBA\n"
-            raise ValueError(err)
+        if img.shape[2] == 4:
+            alpha = img[:,:,3]
 
-        # Apply hue, saturation, value transformations to hsv
-        if self.hue[t] >= 0:
-            hsv[:,:,0] = self.hue[t]
+        # Make sure we are in RGB
+        rgb = pyfx.util.to_array(img,num_channels=3,dtype=np.uint8)
 
-        if self.saturation[t] >= 0:
-            hsv[:,:,1] = self.saturation[t]
+        # Manipulate HSV if requested
+        if self.hue[t] >= 0 or self.saturation[t] >= 0 or self.value[t] >= 0:
 
-        if self.value[t] >= 0:
-            hsv[:,:,2] = self.value[t]
+            hsv = color.rgb2hsv(rgb)
 
-        # Convert back to rgb
-        rgb = pyfx.util.to_array(color.hsv2rgb(hsv),
-                                 dtype=np.uint8,
-                                 num_channels=3)
+            # Set hue, saturation, and value
+            if self.hue[t] >= 0:
+                hsv[:,:,0] = self.hue[t]
 
+            if self.saturation[t] >= 0:
+                hsv[:,:,1] = self.saturation[t]
 
-        # Apply tempreature
+            if self.value[t] >= 0:
+                hsv[:,:,2] = self.value[t]
+
+            # Convert back to rgb
+            rgb = pyfx.util.to_array(color.hsv2rgb(hsv),
+                                     dtype=np.uint8,
+                                     num_channels=3)
+
+        # Set white balance to specified white point
+        if self.white_point[t] is not None:
+            rgb = pyfx.util.helper.adjust_white_balance(rgb,
+                                                        self.white_point[t])
+
+        # Apply color temperature
         if self.temperature[t] > 0:
-
-            mix_value = np.int(np.round(255*self.temperature_mix_value[t]))
-
-            T = np.zeros((rgb.shape[0],rgb.shape[1],4),dtype=np.uint8)
-            T[:,:,:3] = pyfx.util.helper.kelvin_to_rgb(self.temperature[t])
-            T[:,:,3] = mix_value
-
-            rgba = pyfx.util.to_array(rgb,num_channels=4)
-            rgb[:,:,3] = 255 - mix_value
-
-            # Form alpha composite with new color temperature
-            mixed = pyfx.util.alpha_composite(rgba,T)
-
-            rgb = mixed[:,:,:3]
+            white_point = pyfx.util.helper.kelvin_to_rgb(self.temperature[t])
+            rgb = pyfx.util.helper.adjust_white_balance(rgb,white_point)
 
         # Protect masked portions of the input image
         rgb = self._protect(img,rgb)
