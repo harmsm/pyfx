@@ -172,9 +172,9 @@ class VirtualCamera(Effect):
         holder.
         """
 
-        x, y = pyfx.util.harmonic_langenvin(len(self.t),
-                                            self.shaking_stiffness,
-                                            self.shaking_magnitude)
+        x, y = pyfx.util.helper.harmonic_langenvin(len(self.t),
+                                                   self.shaking_stiffness,
+                                                   self.shaking_magnitude)
 
         return x, y
 

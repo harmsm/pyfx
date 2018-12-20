@@ -209,12 +209,10 @@ class Effect:
         if self.protect_mask[t] is not None:
 
             # Drop protection mask onto original image
-            protect = np.zeros((original_img.shape[0],original_img.shape[1],4),
-                               dtype=np.uint8)
+            protect = pyfx.util.to_array(original_img,
+                                         num_channels=4,
+                                         dtype=np.uint8)
 
-            protect[:,:,:3] = pyfx.util.to_array(original_img,
-                                                 num_channels=3,
-                                                 dtype=np.uint8)
             protect[:,:,3] = pyfx.util.to_array(self.protect_mask[t],
                                                 num_channels=1,
                                                 dtype=np.uint8)
@@ -273,7 +271,7 @@ class Effect:
                 values = np.array(values)
                 interpolator = interpolate.interp1d(times,values,kind="linear")
                 interpolated = interpolator(self.t)
-                smoothed = pyfx.util.smooth(interpolated,window_len=window_len)
+                smoothed = pyfx.util.helper.smooth(interpolated,window_len=window_len)
 
                 self.__dict__[k] = smoothed
 

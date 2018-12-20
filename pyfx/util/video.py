@@ -5,10 +5,14 @@ import numpy as np
 import ffmpeg
 
 def video_dimensions(filename):
+    """
+    Get dimensions of frames in a video file.
+    """
 
     probe = ffmpeg.probe(filename)
 
-    video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
+    video_stream = next((stream for stream in probe['streams']
+                        if stream['codec_type'] == 'video'), None)
 
     width = int(video_stream['width'])
     height = int(video_stream['height'])
@@ -16,6 +20,9 @@ def video_dimensions(filename):
     return width, height
 
 def video_to_array(filename):
+    """
+    Load a video into a 4D numpy  array: [frame,width,height,RGB]
+    """
 
     width, height = video_dimensions(filename)
 
@@ -34,6 +41,9 @@ def video_to_array(filename):
 
     return video
 
+def to_video(img_set,output_file):
+
+    pass
 
 """
 process1 = (
@@ -69,5 +79,5 @@ while True:
 
 process2.stdin.close()
 process1.wait()
-process2.wait() 
+process2.wait()
 """
