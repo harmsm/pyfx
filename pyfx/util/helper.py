@@ -197,6 +197,8 @@ def adjust_white_balance(img,white_point=(255,255,255)):
     transform pixels in image to adjust white balance.
     """
 
+    img = pyfx.util.to_array(img,num_channels=3)
+
     try:
         if len(white_point) != 3:
             raise TypeError

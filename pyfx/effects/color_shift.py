@@ -1,9 +1,14 @@
+__description__ = \
+"""
+Class for altering the color of frames over time.
+"""
+__author__ = "Michael J. Harms"
+__date__ = "2018-12-19"
+
 import pyfx
 from .base import Effect
-
-from skimage import color
-
 import numpy as np
+from skimage import color
 
 class ColorShift(Effect):
     """

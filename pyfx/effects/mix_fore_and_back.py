@@ -1,20 +1,28 @@
+__description__ = \
+"""
+Mix the foreground of the current frame with the background for the whole
+clip.
+"""
+__author__ = "Michael J. Harms"
+__date__ = "2018-12-19"
 
 import pyfx
-
 from .base import Effect
-
 import numpy as np
 
 class MixForeAndBack(Effect):
     """
-    Mix a foreground and background.  The mix is determined by the mask waypoint
-    paramter.  The mask should be a 2D np.uint8 array. Values of 0 will be all
-    background, values of 255 will be all foreground. The function will coerce
-    any array/PIL.Image/file into a single-channel array.  This means a black
-    and white images will work fine.  A color image will be flattend to gray
-    scale and then applied.
+    Combine the current image (foreground) and the clip background, using a
+    mask to determine how they should be alpha composited.  The mask is a 2D
+    array where low values mean background and high values mean foreground. For
+    an int array, low = 0 and high = 255; for a float array, low = 0, high =
+    255.  If the array has more than one channel, it is mixed down to a single
+    channel before being applied. The alpha channel of the mask is ignored.
 
-    This is typically applied as the first effect.
+    Waypoint properties:
+
+    mask: numpy array of appropriate size, 1 channel.  Determines how mixing is
+          done.  If None, do not mix and return foreground image.
     """
 
     def __init__(self,workspace):
@@ -32,14 +40,31 @@ class MixForeAndBack(Effect):
         new_img = img
         if self.mask[t] is not None:
 
-            # Make sure mask is a single channel array
-            mask = pyfx.util.to_array(self.mask[t],num_channels=1,dtype=np.uint8)
+            # Put mask into single channel 0-255 array
+            if self.alpha[t] != 1.0:
+                mask = pyfx.util.to_array(self.mask[t],
+                                          num_channels=1,
+                                          dtype=np.float)
+                mask = pyfx.util.to_array(mask*self.alpha[t],
+                                          num_channels=1,
+                                          dtype=np.uint8)
+            else:
+                mask = pyfx.util.to_array(self.mask[t],
+                                          num_channels=1,
+                                          dtype=np.uint8)
 
-            bg = np.copy(self._workspace.background.image)
+            # Load background
+            bg = pyfx.util.to_array(self._workspace.background.image,
+                                    num_channels=4,dtype=np.uint8)
+
+            # Load foreground and stick mask into alpha channel
             fg = pyfx.util.to_array(img,num_channels=4,dtype=np.uint8)
-            fg[:,:,3] = self.mask[t]*self.alpha[t]
+            fg[:,:,3] = mask
 
+            # Alpha composite
             new_img = pyfx.util.alpha_composite(bg,fg)
+
+            # Protect the image, if requested
             new_img = self._protect(img,new_img)
 
         return new_img

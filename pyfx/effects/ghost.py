@@ -2,14 +2,34 @@ __description__ = \
 """
 Convert any non-background image into a ghost (with an optional glowing halo).
 """
+__author__ = "Michael J. Harms"
+__date__ = "2018-12-19"
+
 import pyfx
 from .base import Effect
-
 import numpy as np
-
 from skimage import color
 
 class Ghost(Effect):
+    """
+    Create a effect by taking the difference between the current frame and the
+    background, adding a glowing halo, and making transparent.
+
+    Waypoint properties:
+    halo_size: positive int.  the size of the visual element used to carve out
+               the halo.
+    num_apply: positive integer. how many times to run the erosition to
+               generate a halo.
+    decay_scalar: positive float. how much to scale the alpha value for each
+                  successive halo erosion.
+    hue: float between 0 and 1.
+    total_alpha: float between 0 and 1.  how transparent to make the ghost.
+    use_base_frame: boolean.  Calculate the ghost using the unprocessed image
+                    returned by the workspace.get_frame(t) call, and then paste
+                    it onto the input image. If False, calculate the ghost on
+                    the input image, and then paste the ghost onto that image.
+    """
+
 
     def __init__(self,workspace):
 
@@ -17,7 +37,8 @@ class Ghost(Effect):
                                   "num_apply":5,
                                   "decay_scalar":0.65,
                                   "hue":0.5,
-                                  "total_alpha":0.9}
+                                  "total_alpha":0.9,
+                                  "use_base_frame":True}
 
         super().__init__(workspace)
 
@@ -29,24 +50,30 @@ class Ghost(Effect):
         if not self._baked:
             self.bake()
 
-        # Make a black and white version of image, then flip back to RGB
-        # with same color on all three channels
-        frame_without_proc = self._workspace.get_frame(t)
-        ghost = pyfx.util.to_array(frame_without_proc,num_channels=1,
+        # decide whether to use the image piped into render or the unprocessed
+        # image from the current workspace time to get the ghost.
+        to_proc = img
+        if self.use_base_frame[t]:
+            to_proc = self._workspace.get_frame(t)
+
+        # Make a black and white version of image
+        ghost = pyfx.util.to_array(to_proc,num_channels=1,
                                    dtype=np.uint8)
+
+        # Convert to HSV
         ghost = pyfx.util.to_array(ghost,num_channels=3,dtype=np.float)
+        ghost = color.rgb2hsv(ghost)
 
         # Change hue to current waypoint color
-        ghost = color.rgb2hsv(ghost)
         ghost[:,:,0] = self.hue[t]
         ghost[:,:,1] = 1.0
-        ghost = color.hsv2rgb(ghost)
 
         # Convert back to an RGBA int array
+        ghost = color.hsv2rgb(ghost)
         ghost = pyfx.util.to_array(ghost,num_channels=4,dtype=np.uint8)
 
         # Put diff on alpha channel, scaling by total_alpha
-        diff = self._workspace.background.frame_diff(frame_without_proc)
+        diff = self._workspace.background.frame_diff(to_proc)
         ghost[:,:,3] = pyfx.util.to_array(diff*self.total_alpha[t],
                                           num_channels=1,dtype=np.uint8)
 

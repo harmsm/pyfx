@@ -1,11 +1,27 @@
+__description__ = \
+"""
+Find the eyes of people in a frame and then give them glowing orbs instead
+of normal eyes.
+"""
+__author__ = "Michael J. Harms"
+__date__ = "2018-12-19"
 
 import pyfx
-
 from .base import Effect
-
 import numpy as np
 
 class GlowingEyes(Effect):
+    """
+    Give people in a collection of frames glowing eyes.  The eyes are found
+    along the entirety of the video clip, and then interpolated for gaps where
+    the eyes were missed.  As a result, this clas has a huge .bake() call with
+    a lot of options.
+
+    Waypoint properties
+
+    eye_scalar: float, how big to make the eyes relative to the size of the
+                eye found by dlib.
+    """
 
     def __init__(self,workspace):
 
@@ -22,6 +38,24 @@ class GlowingEyes(Effect):
              real_cutoff=100,
              min_time_visible=5,
              smooth_window_len=0):
+        """
+        Prep for the glowing eyes effect by finding eyes over the course of the
+        video clip.
+
+        training_data: dlib face training data.  If None, use the default model
+        max_time_gap: maximum time gap over which a facial feature is not seen
+                      that can be interpolated.
+        max_time_gap: maximum time over which two similar faces are considered
+                      the same without observing the face at intermediate times
+        p_cutoff: minimum probability at which two faces are considered the same
+                  when comparing a newly found face to a collection of previously
+                  identified faces.
+        real_cutoff: maximum Euclidian distance between two faces for which they
+                     are considered the same
+        min_time_visible: do not return any face stacks in which the minimum time
+                          seen is less than min_time_visible.
+        smooth_window_len: how much to smooth the interpolated trajectories.
+        """
 
         self._human_faces = pyfx.processors.HumanFaces(self._workspace,
                                                        training_data,

@@ -8,8 +8,19 @@ Enforces these rules:
     2. Float arrays must have values between 0 and 1
     3. Integer arrays must have values between 0 and 255
 
-If an alpha channel is generated, it will be filled with a value of 1.0 (float)
-or 255 (integer).
+When lowering the number of channels, the RGB channels are mixed to yield a
+single channel.  When increasing the number of channels, the single channel
+is copied to all three channels.
+
+If an alpha channel is lost (say in a 4->3 channel conversion), it is discarded.
+If an alpha channel is generated (say in a 3->4 channel conversion), it will be
+filled with a value of 1.0 (float) or 255 (integer).
+
+When possible, objects are not modified, but returned.  (For example, trying to
+convert a 3 channel int array to another 3 channel int array will simply return
+the input ndarray object.  This means the user can call to_array() willy-nilly
+to make sure they have the right data type for an operation, without having
+a ton of numpy operations added to their call.
 """
 
 import numpy as np
@@ -26,7 +37,7 @@ INT_TYPES = (np.int,np.intc,np.intp,np.int8,np.int16,np.int32,np.int64,
 FLOAT_TYPES = (np.float,np.float16,np.float32,np.float64)
 
 
-def to_array(img,dtype=np.uint8,num_channels=4):
+def to_array(img,dtype=np.uint8,num_channels=4,copy=False):
     """
     Convert a file, array, or PIL image to an array with the specificed
     number of channels and data type.
@@ -34,6 +45,9 @@ def to_array(img,dtype=np.uint8,num_channels=4):
     img: string with file, numpy.ndarray, or PIL.Image instance.
     dtype: must be some form of numpy int or float.
     num_channels: number of output channels (1,3, or 4).
+    copy: whether or not to require the array to be copied. (If False and the
+          array is already in the right format, just send the object back
+          without doing anything to it)
     """
 
     # Make sure output specs are sane
@@ -57,9 +71,11 @@ def to_array(img,dtype=np.uint8,num_channels=4):
         if img.dtype == dtype:
             if num_channels == 1:
                 if len(img.shape) == 2:
+                    if copy: img = np.copy(img)
                     return img
             else:
                 if len(img.shape) == 3 and img.shape[2] == num_channels:
+                    if copy: img = np.copy(img)
                     return img
 
         # If we get here, we're going to need to convert the array to a
@@ -117,8 +133,10 @@ def to_file(image,image_file):
 
     if type(image) is np.ndarray:
         image = _array_to_image(image)
+
     elif PIL_PATTERN.search(str(type(image))):
         image = image
+
     else:
         err = "image type not recognized.\n"
         raise ValueError(err)
@@ -126,25 +144,15 @@ def to_file(image,image_file):
     image.save(image_file)
 
 
-def alpha_composite(bottom,top,return_matrix_as_pil=False):
+def alpha_composite(bottom,top,return_as_pil=False):
     """
     Place image "top" over image "bottom" using alpha compositing.  If
-    return_matrix_as_pil is True, return as a PIL.Image instance.
+    return_as_pil, return as a PIL.Image instance.  Otherwise, return a
+    0-255, 4-channel array.
     """
 
-    # Convert "a" to a PIL Image (if necessary)
-    if type(bottom) == Image.Image:
-        bottom_img = bottom
-        return_as_image = True
-    else:
-        bottom_img = _array_to_image(bottom)
-        return_as_image = return_matrix_as_pil
-
-    # Convert "b" to a PIL Image (if necessary)
-    if type(top) == Image.Image:
-        top_img = top
-    else:
-        top_img = _array_to_image(top)
+    bottom_img = to_image(bottom)
+    top_img = to_image(top)
 
     # Sanity checks
     if top_img.mode != 'RGBA' or bottom_img.mode != 'RGBA':
@@ -159,15 +167,11 @@ def alpha_composite(bottom,top,return_matrix_as_pil=False):
     composite = Image.alpha_composite(bottom_img,top_img)
 
     # Return as an Image instance
-    if return_as_image:
+    if return_as_pil:
         return composite
 
-    # Return as a 0-255 array
-    if bottom.dtype in INT_TYPES:
-        return np.array(composite,dtype=bottom.dtype)
-
-    # Return as a 0-1 array
-    return np.array(np.array(composite)/255,dtype=bottom.dtype)
+    # Return as array
+    return to_array(composite,dtype=np.uint8,num_channels=4)
 
 
 def _array_to_image(a):
@@ -175,58 +179,12 @@ def _array_to_image(a):
     Convert an array to an RGBA PIL.Image.
     """
 
-    if len(a.shape) == 2:
-        duplicate_channels = True
-        fake_alpha = True
-
-    elif len(a.shape) == 3:
-        if a.shape[2] in (0,1):
-            duplicate_channels = True
-            fake_alpha = True
-        elif a.shape[2] == 3:
-            duplicate_channels = False
-            fake_alpha = True
-        elif a.shape[2] == 4:
-            duplicate_channels = False
-            fake_alpha = False
-        else:
-            err = "the 3rd array dimension must be 4 or less\n"
-            raise ValueError(err)
-
-    else:
-        err = "array must be 2D or 3D\n"
+    if type(a) is not np.ndarray:
+        err = "input is not an array\n"
         raise ValueError(err)
 
-    if a.dtype in INT_TYPES:
-        if np.min(a) < 0 or np.max(a) > 255:
-            err = "integer arrays must have values between 0 and 255\n"
-            raise ValueError(err)
-        else:
-            a_tmp = a
-    else:
-        if np.min(a) < 0 or np.max(a) > 1:
-            err = "non-integer arrays must have values between 0 and 1\n"
-            raise ValueError(err)
-        else:
-            a_tmp = 255*a
-
-    # convert array to three-channel color plus alpha
-    a_array = np.zeros((a.shape[0],a.shape[1],4),np.uint8)
-    if duplicate_channels:
-        a_array[:,:,0] = a_tmp
-        a_array[:,:,1] = a_tmp
-        a_array[:,:,2] = a_tmp
-    else:
-        a_array[:,:,:3] = a_tmp[:,:,:3]
-
-    if fake_alpha:
-        a_array[:,:,3] = 255
-    else:
-        a_array[:,:,3] = a_tmp[:,:,3]
-
-    a_img = Image.fromarray(a_array)
-
-    return a_img
+    an_array = to_array(a,num_channels=4,dtype=np.uint8)
+    return Image.fromarray(an_array)
 
 
 def _image_to_array(img,dtype=np.uint8,num_channels=4):
@@ -249,12 +207,26 @@ def _image_to_array(img,dtype=np.uint8,num_channels=4):
     return out
 
 def _convert_channels(a,dtype=np.uint8,num_channels=4):
+    """
+    Convert an array "a" to whatever num_channels is requested. An RGB array
+    going to a single channel is mixed using skimage.color.rgb2gray.  For a
+    single channel, the alpha channel is discarded.  Going from a single
+    channel to a 3 or 4 channel, the single channel is duplicated across
+    the RGB channels.  The maximum value for the array type is assigned to the
+    new alpha channel.  Integers are forced to be 0-255.
+    """
 
+    # Figure out what the maximum possible value of an entry is if we have to
+    # construct a new channel
     max_possible_value = 255
     if dtype not in INT_TYPES:
         max_possible_value = 1.0
 
     # sanity check
+    if type(a) is not np.ndarray:
+        err = "input is not a numpy array\n"
+        raise ValueError(err)
+
     if num_channels not in (1,3,4):
         err = "number of channels must be 1, 3, or 4\n"
         raise ValueError(err)
@@ -267,7 +239,7 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
     # 1 input channel
     if len(a.shape) == 2:
 
-        # ... to 1 output channel
+        # ... to 1 output channel (no change --> return same object)
         if num_channels == 1:
             out = a
 
@@ -294,9 +266,13 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
 
                 bw = color.rgb2gray(a)
                 if dtype in INT_TYPES:
-                    out = np.array(np.round(bw*255,0),dtype=dtype)
+                    out = np.round(bw*255,0)
+                    out[out > 255] = 255
+                    out[out < 0] = 0
+                    out = np.array(out,dtype=dtype)
                 else:
                     out = np.array(bw,dtype=dtype)
+
             else:
                 err = "input array must have 1,2,3, or 4 channels.\n"
                 raise ValueError(err)
@@ -304,7 +280,7 @@ def _convert_channels(a,dtype=np.uint8,num_channels=4):
         # ... to 3 output channels
         elif num_channels == 3:
 
-            # 1 to 3 or 2 to 3 (drop second alpha channel for 2 to 3)
+            # 1 to 3 or 2 to 3 (drop input alpha channel for 2 to 3)
             if a.shape[2] == 1 or a.shape[2] == 2:
                 out[:,:,0] = a[:,:,0]
                 out[:,:,1] = a[:,:,0]
@@ -357,6 +333,10 @@ def _float_to_int(a,dtype=np.uint8,zero_tolerance=1e-6):
     Convert a float array to an integer array.
     """
 
+    if dtype not in INT_TYPES:
+        err = "dtype {} is not an integer type\n".format(dtype)
+        raise ValueError(err)
+
     # Start with pointer to "a"
     b = a
 
@@ -379,11 +359,9 @@ def _float_to_int(a,dtype=np.uint8,zero_tolerance=1e-6):
             err += "array min: {}, array max: {}\n".format(np.min(b),np.max(b))
             raise ValueError(err)
 
-    if dtype not in INT_TYPES:
-        err = "dtype {} is not an integer type\n".format(dtype)
-        raise ValueError(err)
-
     out = np.array(np.round(b*255,0),dtype=dtype)
+    out[out > 255] = 255
+    out[out < 0]   = 0
 
     return out
 
@@ -392,6 +370,10 @@ def _int_to_float(a,dtype=np.float):
     """
     Convert an integer array to a float array.
     """
+
+    if dtype not in FLOAT_TYPES:
+        err = "dtype {} is not an float type\n".format(dtype)
+        raise ValueError(err)
 
     # Start with pointer to "a"
     b = a
@@ -411,11 +393,9 @@ def _int_to_float(a,dtype=np.float):
             err += "array min: {}, array max: {}\n".format(np.min(b),np.max(b))
             raise ValueError(err)
 
-    if dtype not in FLOAT_TYPES:
-        err = "dtype {} is not an float type\n".format(dtype)
-        raise ValueError(err)
-
     out = np.array(b/255,dtype=dtype)
+    out[out < 0] = 0.0
+    out[out > 1] = 1.0
 
     return out
 
