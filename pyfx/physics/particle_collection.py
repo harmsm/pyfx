@@ -19,7 +19,7 @@ class ParticleCollection:
                  num_particles,
                  dimensions=(1920,1080),
                  potentials=[],
-                 velocity_sd=1.0,
+                 velocity_dist=1.0,
                  particle_density=0.01,
                  radius_pareto=1.0,
                  radius_max=5,
@@ -31,8 +31,14 @@ class ParticleCollection:
         num_particles: number of particles to add
         dimensions: dimensions of box
         potentials: list of physics.Potential instances
-        velocity_sd: standard deviation of the velocity distribution for initial
-                     particle placement
+        velocity_dist: control velocity distribution for new particle creation.
+                       Can take two different forms:
+                       float: x and y same; mean of 0, sd of velocity_dist
+                       list-like of 4 floats:
+                            x_mean = velocity_dist[0]
+                            x_sd = velocity_dist[1]
+                            y_mean = velocity_dist[2]
+                            y_sd = velocity_dist[3]
         particle_density: density of each particle (for relating radius to
                           mass)
         radius_pareto: pareto shape parameter for the distribution used to
@@ -50,17 +56,17 @@ class ParticleCollection:
                           If None, do not generate sprites
         """
 
-        self._num_particles = num_particles
+        self.num_particles = num_particles
         self._dimensions = np.array(dimensions)
         self.potentials = copy.copy(potentials)
-        self._velocity_sd = velocity_sd
-        self._particle_density = particle_density
-        self._radius_pareto = radius_pareto
-        self._radius_max = radius_max
-        self._sample_which_potential = sample_which_potential
-        self._purge = purge
-        self._num_equilibrate_steps = num_equilibrate_steps
-        self._sprite_generator = sprite_generator
+        self.velocity_dist = velocity_dist
+        self.particle_density = particle_density
+        self.radius_pareto = radius_pareto
+        self.radius_max = radius_max
+        self.sample_which_potential = sample_which_potential
+        self.purge = purge
+        self.num_equilibrate_steps = num_equilibrate_steps
+        self.sprite_generator = sprite_generator
 
         self._particles = []
 
@@ -85,7 +91,9 @@ class ParticleCollection:
             coord = np.array((x,y))
 
         # Generate random velocity (sampling from a normal distribution)
-        velocity = np.random.normal(0,self._velocity_sd,2)
+        vx = np.random.normal(self._velocity_dist[0],self._velocity_dist[1])
+        vy = np.random.normal(self._velocity_dist[2],self._velocity_dist[3])
+        velocity = np.array((vx,vy))
 
         # Generate a physical particle
         p = pyfx.physics.Particle(coord,velocity=velocity,radius=radius,
@@ -205,12 +213,50 @@ class ParticleCollection:
         self._num_particles = int(round(num_particles))
 
     @property
-    def velocity_sd(self):
-        return self._velocity_sd
+    def velocity_dist(self):
+        return self._velocity_dist
 
-    @velocity_sd.setter
-    def velocity_sd(self,velocity_sd):
-        self._velocity_sd = float(velocity_sd)
+    @velocity_dist.setter
+    def velocity_dist(self,velocity_dist):
+
+        mangled = False
+        new_velocity_dist = []
+        try:
+            if len(velocity_dist) == 4:
+                # mean_x, sd_x, mean_y, sd_y; x and y different
+                new_velocity_dist.append(velocity_dist[0])
+                new_velocity_dist.append(velocity_dist[1])
+                new_velocity_dist.append(velocity_dist[2])
+                new_velocity_dist.append(velocity_dist[3])
+            else:
+                mangled = True
+        except TypeError:
+
+            # velocity_dist is a float --> give x and y mean velocities of zero
+            # and standard deviations of velocity_dist
+            try:
+                velocity_dist = float(velocity_dist)
+            except ValueError:
+                mangled = True
+
+            # mean_x = 0, sd_x, mean_y = 0, sd_y; x and y identical
+            new_velocity_dist.append(0)
+            new_velocity_dist.append(velocity_dist)
+            new_velocity_dist.append(0)
+            new_velocity_dist.append(velocity_dist)
+
+        if new_velocity_dist[1] < 0 or new_velocity_dist[3] < 0:
+            mangled = rue
+
+        if mangled:
+            err = "Uninterpretable velocity_dist.  This parameter should be a\n"
+            err += "single float or list-like object of length 4.  standard \n"
+            err += "deviations must be >= 0.\n"
+            raise ValueError(err)
+
+        # Store the values
+        self._velocity_dist = np.array(new_velocity_dist,dtype=np.float)
+
 
     @property
     def particle_density(self):
@@ -259,3 +305,11 @@ class ParticleCollection:
     @num_equilibrate_steps.setter
     def num_equilibrate_steps(self,num_equilibrate_steps):
         self._num_equilibrate_steps = int(num_equilibrate_steps)
+
+    @property
+    def sprite_generator(self):
+        return self._sprite_generator
+
+    @sprite_generator.setter
+    def sprite_generator(self,sprite_generator):
+        self._sprite_generator = sprite_generator

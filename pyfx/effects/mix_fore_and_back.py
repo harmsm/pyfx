@@ -23,11 +23,15 @@ class MixForeAndBack(Effect):
 
     mask: numpy array of appropriate size, 1 channel.  Determines how mixing is
           done.  If None, do not mix and return foreground image.
+    bg_override: image to use instead of the workspace background channel
+                 for the background.  If None, use the background image for the
+                 workspace.
     """
 
     def __init__(self,workspace):
 
-        self._default_waypoint = {"mask":None}
+        self._default_waypoint = {"mask":None,
+                                  "bg_override":None}
 
         super().__init__(workspace)
 
@@ -54,7 +58,10 @@ class MixForeAndBack(Effect):
                                           dtype=np.uint8)
 
             # Load background
-            bg = pyfx.util.to_array(self._workspace.background.image,
+            local_bg = self._workspace.background.image
+            if self.bg_override[t] is not None:
+                local_bg = self.bg_override[t]
+            bg = pyfx.util.to_array(local_bg,
                                     num_channels=4,dtype=np.uint8)
 
             # Load foreground and stick mask into alpha channel

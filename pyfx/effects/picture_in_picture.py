@@ -13,7 +13,7 @@ import skimage
 
 import numpy as np
 
-import os, glob
+import os, glob, warnings
 
 class PictureInPicture(Effect):
     """

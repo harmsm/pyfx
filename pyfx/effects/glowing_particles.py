@@ -23,8 +23,14 @@ class GlowingParticles(Effect):
         num_particles: number of particles to add
         potentials: list of physics.Potential instances
         hue: particle hue (0 to 1 scale)
-        velocity_sd: standard deviation of the velocity distribution for initial
-                     particle placement
+        velocity_dist: control velocity distribution for new particle creation.
+                       Can take two different forms:
+                       float: x and y same; mean of 0, sd of velocity_dist
+                       list-like of 4 floats:
+                            x_mean = velocity_dist[0]
+                            x_sd = velocity_dist[1]
+                            y_mean = velocity_dist[2]
+                            y_sd = velocity_dist[3]
         particle_density: density of each particle (for relating radius to
                           mass)
         radius_pareto: pareto shape parameter for the distribution used to
@@ -43,7 +49,7 @@ class GlowingParticles(Effect):
         self._default_waypoint = {"num_particles":200,
                                   "potentials":[],
                                   "hue":0.5,
-                                  "velocity_sd":1.0,
+                                  "velocity_dist":1.0,
                                   "particle_density":0.01,
                                   "radius_pareto":1.0,
                                   "radius_max":5,
@@ -73,7 +79,7 @@ class GlowingParticles(Effect):
 
         self._particle_collection = pyfx.physics.ParticleCollection(num_particles=self.num_particles[0],
                                                        potentials=self.potentials[0],
-                                                       velocity_sd=self.velocity_sd[0],
+                                                       velocity_dist=self.velocity_dist[0],
                                                        particle_density=self.particle_density[0],
                                                        radius_pareto=self.radius_pareto[0],
                                                        radius_max=self.radius_max[0],
@@ -98,7 +104,7 @@ class GlowingParticles(Effect):
 
         # Update the particle collection
         self._particle_collection.potentials = self.potentials[t]
-        self._particle_collection.velocity_sd = self.velocity_sd[t]
+        self._particle_collection.velocity_dist = self.velocity_dist[t]
         self._particle_collection.particle_density = self.particle_density[t]
         self._particle_collection.radius_pareto = self.radius_pareto[t]
         self._particle_collection.radius_max = self.radius_max[t]
@@ -135,4 +141,10 @@ class GlowingParticles(Effect):
 
         # Write out
         out_array[:,:,3] = out_array[:,:,3]*self.alpha[t]
-        return pyfx.util.alpha_composite(img,out_array)
+
+        final = pyfx.util.alpha_composite(img,out_array)
+
+        # Protect image, if requested
+        final = self._protect(img,final)
+
+        return final

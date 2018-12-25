@@ -72,7 +72,7 @@ It currently has a few features:
     + `float` (positive values between 0 and 1)
     + `int` (positive values between 0 and 255)
     + Grayscale (one channel), RGB (three channel), and RGBA (four channel)
-+ Arrays are stored in `array[y,x,channel]` format, where `y` indexes height and  `x`  indexes width.   The origin is in the top, left.  So 0,0 corresponds to the top left.  200,
+    + Arrays are stored in `array[y,x,channel]` format, where `y` indexes height and  `x`  indexes width.   The origin is in the top, left.  So 0,0 corresponds to the top left.  540,960 corresponds to the center of the frame.
 
 ## TO DO
 

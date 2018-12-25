@@ -28,6 +28,9 @@ characteristics.
    apply whatever transformation is necessary at time and must return an image
    of identical dimensions to the input image.
 
+Some useful private methods/features of the Effect class:
+
+1. 
 """
 import pyfx
 
