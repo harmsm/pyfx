@@ -21,7 +21,6 @@ class Workspace:
         src:    If string, treat as video file.
                 If dir, treat as directory of png files.
                 If list, treat as list of image files corresponding to frames.
-                If None, load from existing source.
                 If loading from an existing source, this argument is ignored.
         bg_frame: Frame to use for background subtraction (string pointing to
                   image file, PIL.Image instance, or array).  x,y dimensions

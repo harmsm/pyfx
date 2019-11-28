@@ -30,7 +30,7 @@ characteristics.
 
 Some useful private methods/features of the Effect class:
 
-1. 
+1.
 """
 import pyfx
 
@@ -201,6 +201,74 @@ class Effect:
         except KeyError:
             err = "waypoint {} not found\n".format(t)
             raise ValueError(err)
+
+    def add_waypoints(self,waypoints):
+        """
+        Add a block of waypoints all at once.  waypoints should be a pandas
+        dataframe or file that can be read by pandas (csv/excel).  The
+        dataframe must have a 't' column that indicates the waypoint time (in
+        workspace time).  Other columns are interpreted as keywords.  For
+        example, the data frame:
+
+        t,color
+        10,red
+        17,blue
+
+        would create two waypoints:
+            self.add_waypoint(t=10,color="red")
+            self.add_waypoint(t=17,color="blue")
+        """
+
+        # Try to read waypoints from a file
+        if type(waypoints) is str:
+
+            print("{} is a string.  Trying to read as file.".format(waypoints))
+
+            if not os.path.isfile(waypoints):
+                err = "\n\n{} does not exist.\n\n".format(waypoints)
+                raise FileNotFoundError(err)
+
+            if waypoints[:-5] == ".xlsx" or waypoints[:-4] == ".xls":
+                self._waypoint_df = pd.read_excel(waypoints)
+            elif waypoints[:-4] == ".csv":
+                self._waypoint_df = pd.read_csv(waypoints)
+            else:
+                err = "\n\nFile type of {} not recognized.  Should be excel or csv.\n\n".format(waypoints)
+                raise ValueError(err)
+
+        # Grab the waypoints as as pandas dataframe
+        elif type(waypoints) is pd.DataFrame:
+            self._waypoint_df = waypoints.copy()
+
+        else:
+            err = "\n\nwaypoints type not recognized.  Should be file readable "
+            err += "by pandas or a pandas DataFrame.\n\n".format(waypoints)
+            raise ValueError(err)
+
+        # Create list of all columns in dataframe except 't'
+        columns = list(self._waypoint_df.columns)
+        try:
+            columns.remove('t')
+        except ValueError:
+            err = "waypoints dataframe must have a 't' column indicating time (in workspace frame)\n"
+            raise ValueError(err)
+
+        # Create list of all 't', making sure that the times are unique
+        times = np.copy(self._waypoint_df.t)
+        times = list(np.array(np.round(times,0),dtype=np.int))
+        if len(times) != len(set(times)):
+            err = "Duplicate waypoints in file. (Float times are rounded to nearest integer time.)\n"
+            raise ValueError(err)
+
+        # Create a waypoint for each time point
+        for i in range(len(times)):
+
+            kwargs = {}
+            for c in columns:
+                kwargs[c] = self._waypoint_df[c].iloc[i]
+
+            self.add_waypoint(times[i],**kwargs)
+
 
     def _protect(self,original_img,processed_img):
         """

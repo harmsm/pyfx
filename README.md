@@ -16,9 +16,9 @@ ws = pyfx.Workspace("workspace.pyfx",source)
 ws.render(output)
 ```
 
-#### Example 
+#### Example
 
-The following code loads a video stream and, over the first 5 frames, pans left-to-right 100 pixels, rotates 3-degrees clockwise, and adds camera shake. 
+The following code loads a video stream and, over the first 5 frames, pans left-to-right 100 pixels, rotates 3-degrees clockwise, and adds camera shake.
 
 ```python
 import pyfx
@@ -32,7 +32,7 @@ vc.bake()
 ws.render(output,effects=(vc,))
 ```
 
-Effects can be applied in serial as a pipeline.  The following adds flickering exposure to the existing effect. 
+Effects can be applied in serial as a pipeline.  The following adds flickering exposure to the existing effect.
 
 ```python
 import pyfx
@@ -58,6 +58,7 @@ ws.render(output,effects=(vc,cs))
 + `Sprite` class that can be used to define new visuals to attach to particles
 + `Background` class that allows ready identification of foreground and background pixels
 + `Potential` and `Particle` classes for doing physics-based 2D particle effects.
++ `Processor` classes are classes that update things like potentials or sprites as a function of time.
 
 ####  Design choices:
 
