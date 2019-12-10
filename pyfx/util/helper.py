@@ -9,7 +9,37 @@ import pyfx
 from PIL import ImageDraw, ImageFont
 import numpy as np
 
-import sys, shutil, random, string, os, warnings
+import sys, shutil, random, string, os, warnings, re
+
+def alpha_composite(bottom,top,return_as_pil=False):
+    """
+    Place image "top" over image "bottom" using alpha compositing.  If
+    return_as_pil, return as a PIL.Image instance.  Otherwise, return a
+    0-255, 4-channel array.
+    """
+
+    bottom_img = pyfx.util.to_image(bottom)
+    top_img = pyfx.util.to_image(top)
+
+    # Sanity checks
+    if top_img.mode != 'RGBA' or bottom_img.mode != 'RGBA':
+        err = "top and bottom must have alpha channels for compositing\n"
+        raise ValueError(err)
+
+    if top_img.size != bottom_img.size:
+        err = "top and bottom must have the same shape\n"
+        raise ValueError(err)
+
+    # Do compositing
+    composite = Image.alpha_composite(bottom_img,top_img)
+
+    # Return as an Image instance
+    if return_as_pil:
+        return composite
+
+    # Return as array
+    return pyfx.util.to_array(composite,dtype=np.uint8,num_channels=4)
+
 
 def foreground_mask(workspace,time_interval=(0,-1),threshold=0.1):
     """
@@ -43,7 +73,7 @@ def text_on_image(img,text,location=(0,0),size=100,color=(0,0,0)):
 
     img: image (array,file,PIL.Image)
     text: string of text to write
-    location: starting location in pixels
+    location: starting location in pixels (x,y) with (0,0) at top left
     size: font size
     color: color (rgb, 0-1 format)
     """
@@ -243,6 +273,79 @@ def smooth(x,window_len=0):
     trim = int((window_len - 1)/2)
 
     return smoothed[trim:-trim]
+
+def position_by_string(shape,position_string="",return_xy=False):
+    """
+    Return the r,c coordinates of a position in an array with shape "shape"
+    by string name.  The function accesses the first two dimensions in the
+    array, assuming they are organized as r,c.  If return_xy is set to true,
+    return in xy coordinates.
+
+    Keys recognized are:
+    top, middle, bottom, left, center, right
+
+    The default is y_middle, x_center (an empty position string returns this)
+    "top" would return y_top, x_center
+    "left" would return y_middle, x_left
+    "topleft" would return y_top, x_left
+    "lefttop" is equivalent to "topleft"
+    Strings like "topmiddle" or "leftright" will throw an error.
+
+    For the "middle" and "center" values, returns N // 2 as the center.
+    """
+
+    # Make sure array is big enough to parse
+    if len(shape) < 2:
+        err = "Cannot give positions for arrays with fewer than two dimensions.\n"
+        raise ValueError(err)
+
+    # Parse the strings specifying r position
+    r_max = shape[0]
+    if re.search("top",position_string):
+        r_key = "top"
+        position_string = re.sub(r_key,"",position_string,count=1)
+        r_value = 0
+    elif re.search("middle",position_string):
+        r_key = "middle"
+        position_string = re.sub(r_key,"",position_string,count=1)
+        r_value = r_max // 2
+    elif re.search("bottom",position_string):
+        r_key = "bottom"
+        position_string = re.sub(r_key,"",position_string,count=1)
+        r_value = r_max -1
+    else:
+        r_key = "middle"
+        r_value = r_max // 2
+
+    # Parse the strings specifying c position
+    c_max = shape[1]
+    if re.search("left",position_string):
+        c_key = "left"
+        position_string = re.sub(c_key,"",position_string,count=1)
+        c_value = 0
+    elif re.search("center",position_string):
+        c_key = "center"
+        position_string = re.sub(c_key,"",position_string,count=1)
+        c_value = c_max // 2
+    elif re.search("right",position_string):
+        c_key = "right"
+        position_string = re.sub(c_key,"",position_string,count=1)
+        c_value = c_max - 1
+    else:
+        c_key = "center"
+        c_value = c_max // 2
+
+    # Make sure we managed to parse position_string completely.
+    if position_string != "":
+        err = "Could not parse position_string. Code pulled out: {} {}, but '{}' is leftover.\n".format(r_key,c_key,position_string)
+        raise ValueError(err)
+
+    # If carteisan coordinates are requested
+    if return_xy:
+        xy = pyfx.util.convert.rc_to_xy([r_value,c_value],shape=shape[:2])
+        return xy[0], xy[1]
+
+    return r_value, c_value
 
 
 def harmonic_langenvin(num_steps,

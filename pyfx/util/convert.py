@@ -143,35 +143,26 @@ def to_file(image,image_file):
 
     image.save(image_file)
 
-
-def alpha_composite(bottom,top,return_as_pil=False):
+def rc_to_xy(rc,shape):
     """
-    Place image "top" over image "bottom" using alpha compositing.  If
-    return_as_pil, return as a PIL.Image instance.  Otherwise, return a
-    0-255, 4-channel array.
+    Convert origin top left rc coordinate to:
+            origin bottom left, xy coordinate.
+    rc: 1D vector with r and c
+    shape: tuple indicating array shape (array.shape output)
     """
 
-    bottom_img = to_image(bottom)
-    top_img = to_image(top)
+    return np.array([rc[1],shape[0]-rc[0]-1])
 
-    # Sanity checks
-    if top_img.mode != 'RGBA' or bottom_img.mode != 'RGBA':
-        err = "top and bottom must have alpha channels for compositing\n"
-        raise ValueError(err)
+def xy_to_rc(xy,shape):
+    """
+    Convert origin bottom left, xy coordinate to:
+            origin top left, rc coordinate
 
-    if top_img.size != bottom_img.size:
-        err = "top and bottom must have the same shape\n"
-        raise ValueError(err)
+    xy: 1D vector with x and y
+    shape: tuple indicating array shape (array.shape output)
+    """
 
-    # Do compositing
-    composite = Image.alpha_composite(bottom_img,top_img)
-
-    # Return as an Image instance
-    if return_as_pil:
-        return composite
-
-    # Return as array
-    return to_array(composite,dtype=np.uint8,num_channels=4)
+    return np.array([shape[0]-xy[1]-1,xy[0]])
 
 
 def _array_to_image(a):
