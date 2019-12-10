@@ -8,7 +8,7 @@ class Transition:
 
     def apply(self,stream_1,stream_2,**kwargs):
 
-        if stream_1.shape != stream_2.shape:
+        if stream_1.shape[:2] != stream_2.shape[:2]:
             err = "streams do not have the same shape\n"
             raise ValueError(err)
 
@@ -27,8 +27,7 @@ class Transition:
             fg[:,:,3] = trans_mask[:,:,i]
 
             # Alpha composite
-            output[:,:,:,i] = pyfx.util.alpha_composite(bg,fg)[:,:,:]
-
+            output[:,:,:,i] = pyfx.util.helper.alpha_composite(bg,fg)[:,:,:]
 
     def _create_masks(self,trans_mask,**kwargs):
 
