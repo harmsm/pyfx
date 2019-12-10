@@ -6,31 +6,7 @@ np.random.seed(0)
 
 import pyfx
 
-def test_uniform_potential():
-
-    print("Uniform potential")
-
-    p = pyfx.physics.Particle()
-    p.coord = [500,500]
-    u = pyfx.physics.potentials.Uniform(force_vector=np.array((5,0),dtype=np.float))
-    for i in range(10):
-        forces = u.get_forces(p.coord)
-        p.advance_time(forces)
-        print(p.velocity,p.coord)
-
-def test_radial_potential():
-
-    print("Radial potential")
-
-    p = pyfx.physics.Particle((320,320))
-    p.velocity = np.array((0.,0.))
-    r = pyfx.physics.potentials.Radial(center_coord=np.array((300,300)),pot_mag=-1000)
-    for i in range(10):
-        forces = r.get_forces(p.coord)
-        p.advance_time(forces)
-        print(p.velocity,p.coord)
-
-def test_random_potential():
+def test_random():
 
     known_velocity = np.array([[0.42113648,0.0955305 ],
                                [0.65479296,0.63050434],
