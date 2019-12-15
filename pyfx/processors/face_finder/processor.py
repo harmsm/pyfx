@@ -13,14 +13,14 @@ class HumanFaces(Processor):
     """
 
     def __init__(self,
-                 workspace,
+                 videoclip,
                  training_data=None,
                  max_time_gap=5,
                  p_cutoff=0.9,
                  real_cutoff=100,
                  min_time_visible=5):
 
-        self._workspace = workspace
+        self._videoclip = videoclip
 
         if training_data is None:
             self._training_data = os.path.join(pyfx.root_dir,'data',
@@ -40,11 +40,11 @@ class HumanFaces(Processor):
         Find human faces across a collection of frames.
         """
 
-        out_file = os.path.join(self._workspace.name,"HumanFaces.pickle")
+        out_file = os.path.join(self._videoclip.name,"HumanFaces.pickle")
 
         self._img_list = []
-        for t in self._workspace.times:
-            self._img_list.append(self._workspace.get_frame(t))
+        for t in self._videoclip.times:
+            self._img_list.append(self._videoclip.get_frame(t))
 
         if os.path.isfile(out_file):
             f = open(out_file,'rb')

@@ -10,14 +10,14 @@ import pyfx
 import numpy as np
 import copy, os, string, warnings, json, glob, shutil, sys
 
-class Workspace:
+class VideoClip:
     """
-    Main class for managing a pyfx session.
+    Class for managing a pyfx video stream.
     """
 
     def __init__(self,name,src=None,bg_frame=None):
         """
-        name:   string, name of workspace.
+        name:   string, name of videoclip.
         src:    If string, treat as video file.
                 If dir, treat as directory of png files.
                 If list, treat as list of image files corresponding to frames.
@@ -33,7 +33,7 @@ class Workspace:
         self._src = copy.copy(src)
         self._bg_frame = bg_frame
 
-        # If the workspace exists, load it.  If not, create it.
+        # If the videoclip exists, load it.  If not, create it.
         if os.path.exists(self._name):
             if os.path.isdir(self._name):
                 self._load()
@@ -41,7 +41,7 @@ class Workspace:
                 err = "{} exists but is not a directory\n".format(self._name)
                 raise ValueError(err)
         else:
-            self._initialize_workspace()
+            self._initialize_videoclip()
 
     def render(self,out_dir,effects=(),time_interval=None,overwrite=False):
         """
@@ -70,10 +70,10 @@ class Workspace:
             time_interval = tuple(new_interval)
 
         # Do some quick sanity checking -- were the effects all created
-        # using this workspace?
+        # using this videoclip?
         for e in effects:
-            if e.workspace != self:
-                err = "effect {} was not generated with this workspace".format(e)
+            if e.videoclip != self:
+                err = "effect {} was not generated with this videoclip".format(e)
                 raise ValueError(err)
 
         # Go over the frames in the specified time interval
@@ -140,9 +140,9 @@ class Workspace:
         return pyfx.util.to_array(self._img_list[t],dtype=np.uint8,
                                   num_channels=4)
 
-    def _initialize_workspace(self):
+    def _initialize_videoclip(self):
         """
-        Initialize a workspace.
+        Initialize a videoclip.
         """
 
         if not os.path.exists(self._name):
@@ -154,11 +154,11 @@ class Workspace:
 
     def _load(self):
         """
-        Load a workspace state from disk.
+        Load a videoclip state from disk.
         """
 
         if not os.path.isdir(self._name):
-            err = "workspace {} does not exist.\n".format(self._name)
+            err = "videoclip {} does not exist.\n".format(self._name)
             raise FileNotFoundError(err)
 
         f = open(os.path.join(self._name,"pyfx.json"))
@@ -166,11 +166,11 @@ class Workspace:
         f.close()
 
         if input_dict["version"] != pyfx.__version__:
-            w = "version mismatch between pyfx ({}) and workspace ({})\n"
+            w = "version mismatch between pyfx ({}) and videoclip ({})\n"
             warnings.warn(w.format(pyfx.__version__,input_dict["version"]))
 
         if input_dict["name"] != self._name:
-            err = "workspace name mismatch ({} vs. {})".format(input_dict["name"],
+            err = "videoclip name mismatch ({} vs. {})".format(input_dict["name"],
                                                                self._name)
             raise ValueError(err)
 
@@ -178,11 +178,11 @@ class Workspace:
         self._src = input_dict["src"]
         self._bg_frame = input_dict["bg_frame"]
 
-        self._initialize_workspace()
+        self._initialize_videoclip()
 
     def _save(self):
         """
-        Write out workspace state to disk.
+        Write out videoclip state to disk.
         """
 
         out_dict = {}
@@ -242,14 +242,14 @@ class Workspace:
     @property
     def name(self):
         """
-        Name of workspace.
+        Name of videoclip.
         """
         return self._name
 
     @property
     def bg_frame(self):
         """
-        Background frame used for workspace. (return as array)
+        Background frame used for videoclip. (return as array)
         """
 
         return self._bg_frame
@@ -265,28 +265,28 @@ class Workspace:
     @property
     def current_time(self):
         """
-        Current time of the workspace.
+        Current time of the videoclip.
         """
         return self._current_time
 
     @property
     def max_time(self):
         """
-        Maximum time in the workspace.
+        Maximum time in the videoclip.
         """
         return self._max_time
 
     @property
     def times(self):
         """
-        All times in the workspace.
+        All times in the videoclip.
         """
         return list(range(self._max_time + 1))
 
     @property
     def shape(self):
         """
-        Width and height of the workspace.
+        Width and height of the videoclip.
         """
 
         return self._shape

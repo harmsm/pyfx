@@ -13,7 +13,7 @@ class TextBox(Effect):
     """
 
     def __init__(self,
-                 workspace,
+                 videoclip,
                  box_mask,
                  background=None,
                  advance_rate=5):
@@ -46,7 +46,7 @@ class TextBox(Effect):
                                   "size":"",
                                   "color":""}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
 
     def bake(self):

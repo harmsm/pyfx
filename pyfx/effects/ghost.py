@@ -25,13 +25,13 @@ class Ghost(Effect):
     hue: float between 0 and 1.
     total_alpha: float between 0 and 1.  how transparent to make the ghost.
     use_base_frame: boolean.  Calculate the ghost using the unprocessed image
-                    returned by the workspace.get_frame(t) call, and then paste
+                    returned by the videoclip.get_frame(t) call, and then paste
                     it onto the input image. If False, calculate the ghost on
                     the input image, and then paste the ghost onto that image.
     """
 
 
-    def __init__(self,workspace):
+    def __init__(self,videoclip):
 
         self._default_waypoint = {"halo_size":10,
                                   "num_apply":5,
@@ -40,21 +40,21 @@ class Ghost(Effect):
                                   "total_alpha":0.9,
                                   "use_base_frame":True}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
         self._baked = False
 
     def render(self,img):
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self._baked:
             self.bake()
 
         # decide whether to use the image piped into render or the unprocessed
-        # image from the current workspace time to get the ghost.
+        # image from the current videoclip time to get the ghost.
         to_proc = img
         if self.use_base_frame[t]:
-            to_proc = self._workspace.get_frame(t)
+            to_proc = self._videoclip.get_frame(t)
 
         # Make a black and white version of image
         ghost = pyfx.util.to_array(to_proc,num_channels=1,
@@ -73,13 +73,13 @@ class Ghost(Effect):
         ghost = pyfx.util.to_array(ghost,num_channels=4,dtype=np.uint8)
 
         # Put diff on alpha channel, scaling by total_alpha
-        diff = self._workspace.background.frame_diff(to_proc)
+        diff = self._videoclip.background.frame_diff(to_proc)
         ghost[:,:,3] = pyfx.util.to_array(diff*self.total_alpha[t],
                                           num_channels=1,dtype=np.uint8)
 
         # Create HSV glow with hue at time t
-        glow = np.ones((self._workspace.shape[0],
-                        self._workspace.shape[1],3),dtype=np.float)
+        glow = np.ones((self._videoclip.shape[0],
+                        self._videoclip.shape[1],3),dtype=np.float)
         glow[:,:,0] = self.hue[t]
 
         # Convert back to an RGBA array

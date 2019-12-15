@@ -23,11 +23,11 @@ class GlowingEyes(Effect):
                 eye found by dlib.
     """
 
-    def __init__(self,workspace):
+    def __init__(self,videoclip):
 
         self._default_waypoint = {"eye_scalar":1.0}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
         self._baked = False
 
@@ -57,7 +57,7 @@ class GlowingEyes(Effect):
         smooth_window_len: how much to smooth the interpolated trajectories.
         """
 
-        self._human_faces = pyfx.processors.HumanFaces(self._workspace,
+        self._human_faces = pyfx.processors.HumanFaces(self._videoclip,
                                                        training_data,
                                                        max_time_gap,
                                                        p_cutoff,
@@ -117,7 +117,7 @@ class GlowingEyes(Effect):
 
     def render(self,img):
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self._baked:
             self.bake()
 

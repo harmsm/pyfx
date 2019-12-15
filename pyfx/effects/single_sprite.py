@@ -7,7 +7,7 @@ class SingleSprite(Effect):
     Draw a single sprite as a function of time.
     """
 
-    def __init__(self,workspace):
+    def __init__(self,videoclip):
 
         self._default_waypoint = {"hue":0.5,
                                   "saturation":1.0,
@@ -16,7 +16,7 @@ class SingleSprite(Effect):
                                   "radius":5,
                                   "visible":True}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
         self._baked = False
 
@@ -34,7 +34,7 @@ class SingleSprite(Effect):
 
     def render(self,img):
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self.visible[t]:
             return img
 

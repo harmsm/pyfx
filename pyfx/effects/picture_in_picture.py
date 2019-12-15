@@ -28,13 +28,13 @@ class PictureInPicture(Effect):
     To turn off at a given waypoint x, set set_waypoint(x,picture_mask=None).
     """
 
-    def __init__(self,workspace,pip_video,pip_start_frame=0):
+    def __init__(self,videoclip,pip_video,pip_start_frame=0):
         """
-        workspace: workspace for this effect
+        videoclip: videoclip for this effect
         pip_video: If string, treat as video file. (not implemented)
                    If dir, treat as directory of png files.
                    If list, treat as list of image files corresponding to frames.
-        pip_start_frame: pip video frame corresponding to 0 in the workspace.
+        pip_start_frame: pip video frame corresponding to 0 in the videoclip.
                          integer, which can be negative
         """
 
@@ -65,7 +65,7 @@ class PictureInPicture(Effect):
                                   "pip_offset":(0,0),
                                   "pip_scale":1.0}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
     def _get_frame(self,t):
 
@@ -86,7 +86,7 @@ class PictureInPicture(Effect):
 
     def render(self,img):
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self._baked:
             self.bake()
 

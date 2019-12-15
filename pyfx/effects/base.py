@@ -3,8 +3,8 @@ __description__ = \
 A new effect should be a subclass of Effect with the following four
 characteristics.
 
-0. __init__ must take a workspace instance and use it to initialize the base
-   class via `super().__init__(workspace)`.
+0. __init__ must take a videoclip instance and use it to initialize the base
+   class via `super().__init__(videoclip)`.
 
 1. In __init__, define the self._default_waypoint attribute (minimally an
    empty dictionary).  This defines the waypoint parameters that will be
@@ -42,7 +42,7 @@ import copy
 class Effect:
     """
     Base class for defining effects that should be applied across an entire
-    video workspace.  Should not be used on its own; must be subclassed.
+    video videoclip.  Should not be used on its own; must be subclassed.
 
     The following paramters are defined here.
     t: time
@@ -51,15 +51,15 @@ class Effect:
                   effect; a value of 255 means keep original frame.
     """
 
-    def __init__(self,workspace):
+    def __init__(self,videoclip):
         """
         This __init__ function should be called in subclasses using
-        super().__init__(workspace)
+        super().__init__(videoclip)
         """
 
         reserved_keys = ["t","protect_mask","alpha"]
 
-        self._workspace = workspace
+        self._videoclip = videoclip
 
         try:
             self._default_waypoint
@@ -122,10 +122,10 @@ class Effect:
         t = int(round(t))
 
         if t == -1:
-            t = self._workspace.max_time
+            t = self._videoclip.max_time
 
-        if  t < 0 or t > self._workspace.max_time:
-            err = "time {} is outside of the time spanned by the workspace\n".format(t)
+        if  t < 0 or t > self._videoclip.max_time:
+            err = "time {} is outside of the time spanned by the videoclip\n".format(t)
             raise ValueError(err)
 
         # If the waypoint is already defined, keep its values
@@ -207,7 +207,7 @@ class Effect:
         Add a block of waypoints all at once.  waypoints should be a pandas
         dataframe or file that can be read by pandas (csv/excel).  The
         dataframe must have a 't' column that indicates the waypoint time (in
-        workspace time).  Other columns are interpreted as keywords.  For
+        videoclip time).  Other columns are interpreted as keywords.  For
         example, the data frame:
 
         t,color
@@ -250,7 +250,7 @@ class Effect:
         try:
             columns.remove('t')
         except ValueError:
-            err = "waypoints dataframe must have a 't' column indicating time (in workspace frame)\n"
+            err = "waypoints dataframe must have a 't' column indicating time (in videoclip frame)\n"
             raise ValueError(err)
 
         # Create list of all 't', making sure that the times are unique
@@ -275,7 +275,7 @@ class Effect:
         Protect some portion of the processed image with an original image.
         """
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
 
         if self.protect_mask[t] is not None:
 
@@ -306,7 +306,7 @@ class Effect:
         Interpolate between the waypoint values specified by the user.  Load
         the interpolated values into arrays that are class attributes.  (e.g.,
         for a waypoint parameter "x", self.x will now have the interpolated
-        values of "x" across the whole workspace time.
+        values of "x" across the whole videoclip time.
 
         window_len: width of smoothing window. if 0, do not smooth.
         """
@@ -315,14 +315,14 @@ class Effect:
         # very end, create one.
         waypoint_times = list(self._waypoints.keys())
         waypoint_times.sort()
-        if waypoint_times[-1] != self._workspace.max_time:
+        if waypoint_times[-1] != self._videoclip.max_time:
             t = waypoint_times[-1]
-            self._waypoints[self._workspace.max_time] = self._waypoints[t]
-            waypoint_times.append(self._workspace.max_time)
+            self._waypoints[self._videoclip.max_time] = self._waypoints[t]
+            waypoint_times.append(self._videoclip.max_time)
 
         # Deal with time
         times = np.array(waypoint_times,dtype=np.float)
-        out_t = np.array(range(len(self._workspace.times)),dtype=np.int)
+        out_t = np.array(range(len(self._videoclip.times)),dtype=np.int)
         self.__dict__["t"] = out_t
 
         # Interpolate each waypoint parameter, smooth, and load into class
@@ -354,7 +354,7 @@ class Effect:
                 out = []
                 tmp_waypoint_times = waypoint_times[:]
                 this_t = tmp_waypoint_times.pop(0)
-                for i in range(self._workspace.max_time + 1):
+                for i in range(self._videoclip.max_time + 1):
                     if i == tmp_waypoint_times[0]:
                         this_t = tmp_waypoint_times.pop(0)
                     out.append(self._waypoints[this_t][k])
@@ -387,5 +387,5 @@ class Effect:
         return self._baked
 
     @property
-    def workspace(self):
-        return self._workspace
+    def videoclip(self):
+        return self._videoclip

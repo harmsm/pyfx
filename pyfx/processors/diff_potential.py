@@ -8,13 +8,13 @@ import os, shutil, pickle, inspect, json
 class DiffPotential(Processor):
     """
     Workspace-aware class that updates a smooth potential depending on the
-    workspace time.  It reproduces the physics.Potential methods, so Effects
+    videoclip time.  It reproduces the physics.Potential methods, so Effects
     can access this time-dependent potential as though it is just some other
     potential.
     """
 
     def __init__(self,
-                 workspace,
+                 videoclip,
                  kT=1.0,
                  update_interval=5,
                  threshold=0.2,
@@ -25,14 +25,14 @@ class DiffPotential(Processor):
 
         super().__init__()
 
-        self._workspace = workspace
-        self._processor_dir = os.path.join(workspace.name,
+        self._videoclip = videoclip
+        self._processor_dir = os.path.join(videoclip.name,
                                            self.__class__.__name__)
 
         # Parse a generic set of kwargs and record as params
         kwarg_keys = inspect.getfullargspec(self.__init__)[0]
         kwarg_keys.remove("self")
-        kwarg_keys.remove("workspace")
+        kwarg_keys.remove("videoclip")
 
         local_variables = locals()
         self._params = dict([(k,local_variables[k]) for k in kwarg_keys])
@@ -61,19 +61,19 @@ class DiffPotential(Processor):
     def bake(self):
 
         self._pot_files = []
-        max_digits = str(len(str(self._workspace.max_time)) + 2)
+        max_digits = str(len(str(self._videoclip.max_time)) + 2)
         fmt_string = "{:0" + max_digits + "d}.pickle"
 
         self._potential_files = {}
         self._img_files = {}
 
         current_file = None
-        for t in self._workspace.times:
+        for t in self._videoclip.times:
 
             if t % self._params["update_interval"] == 0 or current_file is None:
                 current_file = os.path.join(self._processor_dir,
                                             fmt_string.format(t))
-                current_image = self._workspace.get_frame(t)
+                current_image = self._videoclip.get_frame(t)
 
             self._potential_files[t] = current_file
             self._img_files[t] = current_image
@@ -82,18 +82,18 @@ class DiffPotential(Processor):
 
     def _update(self):
         """
-        Update the potential given the current time in the workspace.
+        Update the potential given the current time in the videoclip.
         """
 
         # If the last potential retrieved was this one, don't reload
-        if self._workspace.current_time == self._last_retrieved_t and \
+        if self._videoclip.current_time == self._last_retrieved_t and \
            self._last_retrieved_pot is not None:
             return
 
         if not self._baked:
             self.bake()
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
 
         pot_file = self._potential_files[t]
 
@@ -104,7 +104,7 @@ class DiffPotential(Processor):
             return
 
         print("calculating potential surface for frame {}".format(t))
-        diff_smooth = self._workspace.background.smooth_diff(self._img_files[t],
+        diff_smooth = self._videoclip.background.smooth_diff(self._img_files[t],
                                                        threshold=self._params["threshold"],
                                                        num_iterate=self._params["num_iterate"],
                                                        dilation_interval=self._params["dilation_interval"],

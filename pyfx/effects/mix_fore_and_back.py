@@ -23,21 +23,21 @@ class MixForeAndBack(Effect):
 
     mask: numpy array of appropriate size, 1 channel.  Determines how mixing is
           done.  If None, do not mix and return foreground image.
-    bg_override: image to use instead of the workspace background channel
+    bg_override: image to use instead of the videoclip background channel
                  for the background.  If None, use the background image for the
-                 workspace.
+                 videoclip.
     """
 
-    def __init__(self,workspace):
+    def __init__(self,videoclip):
 
         self._default_waypoint = {"mask":None,
                                   "bg_override":None}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
     def render(self,img):
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self._baked:
             self.bake()
 
@@ -58,7 +58,7 @@ class MixForeAndBack(Effect):
                                           dtype=np.uint8)
 
             # Load background
-            local_bg = self._workspace.background.image
+            local_bg = self._videoclip.background.image
             if self.bg_override[t] is not None:
                 local_bg = self.bg_override[t]
             bg = pyfx.util.to_array(local_bg,

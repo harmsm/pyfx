@@ -33,7 +33,7 @@ class ColorShift(Effect):
                  length-three tuple or None.  If None, do nothing.
     """
 
-    def __init__(self,workspace):
+    def __init__(self,videoclip):
 
         self._default_waypoint = {"hue":-1.0,
                                   "saturation":-1.0,
@@ -44,7 +44,7 @@ class ColorShift(Effect):
                                   "temperature":-1.0,
                                   "white_point":None}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
     def bake(self,smooth_window_len=0,over_under_tolerance=0.01):
         """
@@ -79,7 +79,7 @@ class ColorShift(Effect):
         Render the image at time t.
         """
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self._baked:
             self.bake()
 

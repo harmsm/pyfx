@@ -39,7 +39,7 @@ class VirtualCamera(Effect):
     shaking_stiffness: shaking_stiffness
     """
 
-    def __init__(self,workspace):
+    def __init__(self,videoclip):
 
         self._default_waypoint = {"x":0.0,
                                   "y":0.0,
@@ -48,7 +48,7 @@ class VirtualCamera(Effect):
                                   "shaking_magnitude":0.0,
                                   "shaking_stiffness":1.0}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
 
     def bake(self,max_expand=1.5,smooth_window_len=0):
@@ -67,7 +67,7 @@ class VirtualCamera(Effect):
             raise ValueError(err)
 
         # Load image as array
-        img = self._workspace.get_frame(0)
+        img = self._videoclip.get_frame(0)
 
         # Find dimensions of image
         width = img.shape[0]
@@ -122,7 +122,7 @@ class VirtualCamera(Effect):
 
     def render(self,img):
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self._baked:
             self.bake()
 

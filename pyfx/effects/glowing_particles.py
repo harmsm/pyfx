@@ -16,9 +16,9 @@ class GlowingParticles(Effect):
     can respond to underlying potential(s) defined in the physics submodule.
     """
 
-    def __init__(self,workspace):
+    def __init__(self,videoclip):
         """
-        workspace: the workspace associated with this effect
+        videoclip: the videoclip associated with this effect
 
         num_particles: number of particles to add
         potentials: list of physics.Potential instances
@@ -59,7 +59,7 @@ class GlowingParticles(Effect):
                                   "num_equilibrate_steps":0,
                                   "purge":True}
 
-        super().__init__(workspace)
+        super().__init__(videoclip)
 
     def bake(self,smooth_window_len=0):
         """
@@ -67,7 +67,7 @@ class GlowingParticles(Effect):
         """
 
         self._current_time = 0
-        self._dimensions = self._workspace.shape
+        self._dimensions = self._videoclip.shape
 
         self._interpolate_waypoints(smooth_window_len)
 
@@ -91,7 +91,7 @@ class GlowingParticles(Effect):
 
     def render(self,img):
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self._baked:
             self.bake()
 

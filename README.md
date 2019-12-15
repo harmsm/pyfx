@@ -9,11 +9,11 @@ This started as a simple project to explore how to do visual effects, rather tha
 
 ```python
 import pyfx
-ws = pyfx.Workspace("workspace.pyfx",source)
+vc = pyfx.VideoClip("videoclip.pyfx",source)
 
 # Add effects here...
 
-ws.render(output)
+vc.render(output)
 ```
 
 #### Example
@@ -23,13 +23,13 @@ The following code loads a video stream and, over the first 5 frames, pans left-
 ```python
 import pyfx
 
-ws = pyfx.Workspace(name,source)
+vc = pyfx.VideoClip(name,source)
 
-vc = pyfx.effects.VirtualCamera(ws)
-vc.add_waypoint(5,x=100,theta=-3,shaking_magnitude=10)
-vc.bake()
+cam = pyfx.effects.VirtualCamera(vc)
+cam.add_waypoint(5,x=100,theta=-3,shaking_magnitude=10)
+cam.bake()
 
-ws.render(output,effects=(vc,))
+vc.render(output,effects=(cam,))
 ```
 
 Effects can be applied in serial as a pipeline.  The following adds flickering exposure to the existing effect.
@@ -38,18 +38,18 @@ Effects can be applied in serial as a pipeline.  The following adds flickering e
 import pyfx
 import random
 
-ws = pyfx.Workspace(name,source)
+vc = pyfx.VideoClip(name,source)
 
-vc = pyfx.effects.VirtualCamera(ws)
-vc.add_waypoint(5,x=100,theta=-3,shaking_magnitude=10)
-vc.bake()
+cam = pyfx.effects.VirtualCamera(vc)
+cam.add_waypoint(5,x=100,theta=-3,shaking_magnitude=10)
+cam.bake()
 
-cs = pyfx.effects.ColorShift(ws)
+cs = pyfx.effects.ColorShift(vc)
 for i in range(30):
     cs.add_waypoint(i,value=random.random())
 cs.bake()
 
-ws.render(output,effects=(vc,cs))
+vc.render(output,effects=(cam,cs))
 ```
 
 #### Main classes

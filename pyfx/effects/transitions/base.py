@@ -4,13 +4,13 @@ from ..base import Effect
 
 class Transition(Effect):
 
-    def __init__(self,workspace,pip_video,pip_start_frame=0):
+    def __init__(self,videoclip,pip_video,pip_start_frame=0):
         """
-        workspace: workspace for this effect
+        videoclip: videoclip for this effect
         pip_video: If string, treat as video file. (not implemented)
                    If dir, treat as directory of png files.
                    If list, treat as list of image files corresponding to frames.
-        pip_start_frame: pip video frame corresponding to 0 in the workspace.
+        pip_start_frame: pip video frame corresponding to 0 in the videoclip.
                          integer, which can be negative
         """
 
@@ -47,7 +47,7 @@ class Transition(Effect):
 
     def render(self,img):
 
-        t = self._workspace.current_time
+        t = self._videoclip.current_time
         if not self._baked:
             self.bake()
 
@@ -68,7 +68,7 @@ class Transition(Effect):
                                           dtype=np.uint8)
 
             # Load background
-            local_bg = self._workspace.background.image
+            local_bg = self._videoclip.background.image
             if self.bg_override[t] is not None:
                 local_bg = self.bg_override[t]
             bg = pyfx.util.to_array(local_bg,
