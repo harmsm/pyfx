@@ -6,7 +6,7 @@ from . import processors
 from . import util
 from . import visuals
 
-from .clip import VideoClip
+from .videoclip import VideoClip
 
 import os
 root_dir = os.path.dirname(os.path.abspath(__file__))
