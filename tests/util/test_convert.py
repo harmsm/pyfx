@@ -4,6 +4,15 @@ import pyfx
 import numpy as np
 import pytest
 
+def test_to_array():
+    pass
+
+def test_to_image():
+    pass
+
+def test_to_file():
+    pass
+
 def test_rc_to_xy():
 
     shape = (10,10)

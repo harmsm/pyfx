@@ -6,7 +6,7 @@ __author__ = "Michael J. Harms"
 __date__ = "2018-12-14"
 
 import pyfx
-from PIL import ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 import sys, shutil, random, string, os, warnings, re

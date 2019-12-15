@@ -4,6 +4,30 @@ import pyfx
 import numpy as np
 import pytest
 
+def test_alpha_composite():
+    pass
+
+def test_foreground_mask():
+    pass
+
+def test_text_on_image():
+    pass
+
+def test_number_frames():
+    pass
+
+def test_kelvin_to_rgb():
+    pass
+
+def test_channel_stretch():
+    pass
+
+def test_adjust_white_balance():
+    pass
+
+def test_smooth():
+    pass
+
 def test_position_by_string():
 
     test_array_size = 11
@@ -46,3 +70,6 @@ def test_position_by_string():
                                                                return_xy=True)
             assert x_out == x_value[j]
             assert y_out == y_value[i]
+
+def test_harmonic_langenvin():
+    pass
