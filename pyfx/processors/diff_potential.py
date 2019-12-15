@@ -7,7 +7,7 @@ import os, shutil, pickle, inspect, json
 
 class DiffPotential(Processor):
     """
-    Workspace-aware class that updates a smooth potential depending on the
+    VidoeClip-aware class that updates a smooth potential depending on the
     videoclip time.  It reproduces the physics.Potential methods, so Effects
     can access this time-dependent potential as though it is just some other
     potential.

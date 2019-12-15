@@ -41,23 +41,23 @@ def alpha_composite(bottom,top,return_as_pil=False):
     return pyfx.util.to_array(composite,dtype=np.uint8,num_channels=4)
 
 
-def foreground_mask(workspace,time_interval=(0,-1),threshold=0.1):
+def foreground_mask(videoclip,time_interval=(0,-1),threshold=0.1):
     """
     Create an image array where pixel intensity is the frequency that
     the pixel in question differs from the background.  Useful for helping
     create foreground masks.
     """
 
-    ws = workspace
+    vc = videoclip
 
-    num_to_check = len(ws.times[time_interval[0]:time_interval[-1]])
+    num_to_check = len(vc.times[time_interval[0]:time_interval[-1]])
 
     # Calculate the difference between each image and the background
-    out_array = np.zeros((ws.shape[0],ws.shape[1]),dtype=np.float)
-    for i, t in enumerate(ws.times[time_interval[0]:time_interval[-1]]):
+    out_array = np.zeros((vc.shape[0],vc.shape[1]),dtype=np.float)
+    for i, t in enumerate(vc.times[time_interval[0]:time_interval[-1]]):
         print(i,'/',num_to_check); sys.stdout.flush()
-        frame = ws.get_frame(t)
-        frame_diff = ws.background.frame_diff(frame)
+        frame = vc.get_frame(t)
+        frame_diff = vc.background.frame_diff(frame)
 
         out_array = out_array + frame_diff
 
@@ -120,11 +120,11 @@ def text_on_image(img,text,location=(0,0),size=100,color=(0,0,0)):
                               num_channels=num_channels,
                               dtype=dtype)
 
-def number_frames(workspace,out_dir,overwrite=False):
+def number_frames(videoclip,out_dir,overwrite=False):
     """
     Number every frame.
     """
-    ws = workspace
+    vc = videoclip
 
     if os.path.isdir(out_dir):
         if overwrite:
@@ -136,11 +136,11 @@ def number_frames(workspace,out_dir,overwrite=False):
     else:
         os.mkdir(out_dir)
 
-    fmt_string = "{:0" + str(len(str(ws.max_time)) + 1) + "d}"
-    for t in ws.times:
-        print(t,"/",len(ws.times))
+    fmt_string = "{:0" + str(len(str(vc.max_time)) + 1) + "d}"
+    for t in vc.times:
+        print(t,"/",len(vc.times))
 
-        frame = ws.get_frame(t)
+        frame = vc.get_frame(t)
         to_write = fmt_string.format(t)
         img = pyfx.util.helper.text_on_image(frame,to_write,
                                              location=(50,50),
