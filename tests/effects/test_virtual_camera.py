@@ -1,28 +1,14 @@
 
 import pyfx
+import os
 
-import os, shutil, glob
+def test_virtual_camera(test_tmp_prefix,tmp_path,video_as_dir):
 
-START_DIR = os.getcwd()
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DIR_INPUT_DEMO = "../../demos/video_as_dir"
-BG_FILE = "../../demos/background.png"
-CLIP_NAME = "test.clip"
-
-
-def test_virtual_camera():
-
-    os.chdir(THIS_DIR)
-
-    vc = pyfx.VideoClip(CLIP_NAME,DIR_INPUT_DEMO)
+    vc = pyfx.VideoClip(name="clip",src=video_as_dir)
 
     cam = pyfx.effects.VirtualCamera(vc)
     cam.add_waypoint(5,x=100,theta=-3,shaking_magnitude=10)
     cam.bake()
 
-    vc.render("test_render",effects=(cam,))
+    vc.render(os.path.join(tmp_path,test_tmp_prefix),effects=(cam,))
 
-    #shutil.rmtree("test_render")
-    #shutil.rmtree(CLIP_NAME)
-
-    os.chdir(START_DIR)

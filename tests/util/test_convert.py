@@ -5,6 +5,24 @@ import numpy as np
 import pytest
 
 def test_to_array():
+
+    # pass bad dtype
+    # pass bad channels
+    # test image to array
+
+    in_dtypes = [np.int,np.float,str,"PIL"]
+    out_dtype = [np.uint8,np.float]
+    num_channels = [1,3,4]
+
+    # OUTPUT VERSIONS
+    # for dtype_in in in_dtypes:
+        # for dtype_out in out_dtypes:
+            # for channel_in in num_channels:
+                # for channel_out in num_channels:
+                    # conver
+
+
+
     pass
 
 def test_to_image():
