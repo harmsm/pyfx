@@ -1,5 +1,7 @@
 
-
+import pyfx
+import numpy as np
+import copy
 
 class MultiClip:
     """
@@ -14,7 +16,8 @@ class MultiClip:
 
     def __init__(self):
 
-        self._clips = []         # list of clips (stable, order they are added)
+        self._clips = []         # list of clip instances (stable, order they
+                                 # are added)
         self._clip_to_layer = [] # clip layers (indexed by order added)
         self._clip_start = []    # clip start times (indexed by order added)
         self._clip_alpha = []    # alpha for clip level (indexed by order added)
@@ -24,6 +27,8 @@ class MultiClip:
 
         self._layer_to_clip = []  # list that maps layer to position in
                                   # _clips list
+
+        self._shape = None        # dimensions of the video clips included
 
     def _parse_clip_id(self,clip_id):
         """
@@ -72,31 +77,79 @@ class MultiClip:
 
     def get_frame(self,t):
         """
-        Get the frame at time t.  Return as an array.
+        Get the composite frame at time t.  Return as an array.
         """
 
-        
+        # Determine what clips overlap this time point
+        include = []
+        for i, c in enumerate(self._clips):
 
+            start = self._clip_start[i]
+            length = c.max_time
 
+            if t >= start and t < (start + length):
+                include.append(self._clip_to_layer[i])
 
-        return pyfx.util.to_array(self._img_list[t],dtype=np.uint8,
-                                  num_channels=4)
+        # Reverse sort by layers.
+        include.sort(reverse=True)
+
+        # Return black if no layers have frames at this time point
+        if len(include) == 0:
+            frame = np.zeros((size[0],size[1],4),dtype=np.uint8)
+            frame = frame[:,:,3] = 255
+
+        # If a single layer
+        else:
+
+            combined_frame = None
+            for i in range(len(include)):
+
+                # Figure out internal index corresponding to this layer
+                index = self._layer_to_clip[include[i]]
+
+                # The frame coming out of a video clip will be a four-channel,
+                # np.uint8 array.
+                frame = self._clips[index].get_frame(t + self._clip_start[index])
+
+                # If alpha for this frame is not 1, apply the requested alpha
+                # channel
+                if self._clip_alpha[index] != 1:
+
+                    if self._clip_alpha[index] == 0:
+                        frame[:,:,3] = 0
+                    else:
+                        frame[:,:,3] = np.array(np.round(frame[:,:,3]*self._clip_alpha[index]),
+                                                dtype=np.uint8)
+
+                if combined_frame is None:
+                    combined_frame = frame
+                else:
+                    combined_frame = pyfx.util.alpha_composite(combined_frame,frame)
+
+        return combined_frame
 
     def add_clip(self,videoclip,layer=None,start=0,alpha=1.0):
         """
         Add a new clip to the multiclip.
 
         videoclip: VideoClip instance
-        layer: layer in which to add it.  If None, put on top (last layer)
-        start: frame to start the video.
+        layer: layer in which to add it.  If None, put on top (last layer).
+        start: frame to start the video
+        alpha: opacity for the layer
         """
 
-        # Make sure the videoclip has a name attribute
-        try:
-            videoclip.name
-        except AttributeError:
+        # Make sure the videoclip is a VideoClip object
+        if type(videoclip) is not pyfx.VideoClip:
             err = "videoclip does not appear to be a videoclip object\n"
             raise ValueError(err)
+
+        # Make sure new videoclip has the same dimensions as the old video
+        # clip.
+        if self.shape is not None:
+            if self.shape != videoclip.shape:
+                err = "The new VideoClip has dimension {}, but the MultiClip has dimension {}.\n".format(videoclip.shape,
+                                                                                                         self.shape)
+                raise ValueError(err)
 
         # See if the clip has already been added
         try:
@@ -106,7 +159,7 @@ class MultiClip:
         except KeyError:
             pass
 
-        # Make sure layer is sane and interpretable before adding anythings
+        # Make sure layer argument is sane and interpretable before adding anythings
         if layer is not None:
             try:
                 tmp = self._clip_to_layer[:]
@@ -122,6 +175,8 @@ class MultiClip:
         self._clips.append(videoclip)
         self._clip_start.append(start)
         self._clip_alpha.append(alpha)
+        if self._shape is None:
+            self._shape = copy.deepcopy(videoclip.shape)
 
         # Update dictionary mapping clip name to its underlying index
         index = len(self._clips) - 1
@@ -235,7 +290,7 @@ class MultiClip:
             err = "shift_by must be interpretable as an integer\n"
             raise ValueError(err)
 
-        self._chip_start[index] = new_pos
+        self._clip_start[index] = new_pos
 
     def set_clip_start(self,clip_id,start_position=0):
         """
@@ -301,3 +356,10 @@ class MultiClip:
         Return alphas for each clip, ordered from bottom to top layer.
         """
         return [self._clip_alpha[x] for x in self._layer_to_clip]
+
+    @property
+    def shape(self):
+        """
+        Return video clip dimensions.
+        """
+        return self._shape

@@ -24,7 +24,7 @@ def video_as_mp4():
 
 @pytest.fixture(scope="module")
 def test_tmp_prefix():
-    return "pytest-tmp-"
+    return "pytest-tmp"
 
 
 # delete any temporary files
