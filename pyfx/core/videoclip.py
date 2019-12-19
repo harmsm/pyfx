@@ -137,6 +137,10 @@ class VideoClip:
         Get the frame at time t.  Return as an array.
         """
 
+        # Return None if t is past the video clip max time
+        if t > self._max_time:
+            return None
+
         return pyfx.util.to_array(self._img_list[t],dtype=np.uint8,
                                   num_channels=4)
 

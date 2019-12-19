@@ -99,7 +99,6 @@ class MultiClip:
         # Combine frames
         if len(include) > 0:
 
-            combined_frame = None
             for i in range(len(include)):
 
                 # Figure out internal index corresponding to this layer
@@ -109,8 +108,8 @@ class MultiClip:
                 # np.uint8 array.
                 frame = self._clips[index].get_frame(t + self._clip_start[index])
 
-                # If alpha for this frame is not 1, apply the requested alpha
-                # channel
+                # If alpha for this frame is not 1, apply the it to the alpha
+                # channel.
                 if self._clip_alpha[index] != 1:
 
                     if self._clip_alpha[index] == 0:

@@ -23,8 +23,14 @@ def video_as_mp4():
     return os.path.abspath(os.path.join(base_dir,"..","demos","video.mp4"))
 
 @pytest.fixture(scope="module")
+def slideshow_dir():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.abspath(os.path.join(base_dir,"..","demos","slideshow"))
+
+@pytest.fixture(scope="module")
 def test_tmp_prefix():
     return "pytest-tmp"
+
 
 
 # delete any temporary files

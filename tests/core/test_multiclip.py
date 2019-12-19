@@ -171,5 +171,5 @@ def test_multiclip(test_tmp_prefix,tmp_path,video_as_dir,):
     # -------------------------------------------------------------------------
 
     # Test whether this fails.  Going to need to figure out a better, higher
-    # level test suite for video renders.  
+    # level test suite for video renders.
     frame = mc.get_frame(0)
