@@ -93,13 +93,11 @@ class MultiClip:
         # Reverse sort by layers.
         include.sort(reverse=True)
 
-        # Return black if no layers have frames at this time point
-        if len(include) == 0:
-            frame = np.zeros((size[0],size[1],4),dtype=np.uint8)
-            frame = frame[:,:,3] = 255
+        # Default is to return None (if no clips have frame at this time point)
+        combined_frame = None
 
-        # If a single layer
-        else:
+        # Combine frames
+        if len(include) > 0:
 
             combined_frame = None
             for i in range(len(include)):
