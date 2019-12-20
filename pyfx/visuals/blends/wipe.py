@@ -3,9 +3,9 @@ import pyfx
 from skimage import draw
 import numpy as np
 
-def transition_mask(shape,num_steps,start=None,end=None,feather=0):
+def wipe(shape,num_steps,start=None,end=None,feather=0):
     """
-    Create a num_steps long collection of 0-255 int masks to wipe
+    Create a num_steps + 1 long collection of 0-255 int masks to wipe
     between "start" and "end" coordinates along the image.
 
     shape: 2-tuple, shape of image to create wipe mask for
@@ -58,7 +58,7 @@ def transition_mask(shape,num_steps,start=None,end=None,feather=0):
         end[1] = middle
 
     # Create output masks
-    out_masks = np.zeros((num_steps+1,shape[0],shape[1]),dtype=np.float)
+    out_masks = np.zeros((num_steps+1,shape[0],shape[1]),dtype=np.uint8)
 
     # Because I'm not smart enough to do trigonometry in rc coordinates,
     # convert to left-handed xy coordinates.
@@ -258,14 +258,14 @@ def transition_mask(shape,num_steps,start=None,end=None,feather=0):
 
         # Draw polygon
         rr, cc = draw.polygon(r, c, shape=shape)
-        out_masks[i,rr,cc] = 1.0
+        out_masks[i,rr,cc] = 255
 
     # feather
     if feather > 0:
         cs = np.cumsum(out_masks,axis=0)
         cs[feather:] = cs[feather:] - cs[:-feather]
-        out_masks = cs[feather-1:]/feather
+        out_masks = np.round(cs[feather-1:]/feather,0)
 
     # Return 0-255 mask array
 
-    return pyfx.util.to_array(out_masks,dtype=np.uint8,num_channels=1)
+    return out_masks

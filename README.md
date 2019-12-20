@@ -54,6 +54,11 @@ vc.render(output,effects=(cam,cs))
 
 #### Main classes
 
+##### Core class
++ `VideoClip`
++ `MultiClip`
++ `PhotoStream`
+##### X
 + `Effect` base class that can be extended to generate arbitrarily complicated time-aware visual effects.
 + `Sprite` class that can be used to define new visuals to attach to particles
 + `Background` class that allows ready identification of foreground and background pixels
@@ -70,7 +75,5 @@ Image arrays are enforced to be of only a few types:
 
 The simplest way to ensure compatibility across the library is to load images by  `pyfx.util.to_array`, which can take any image-like input and will spit out an array.  (`pyfx.util.to_file`  does the same basic functionality, but writes to an image file.)
 
-#### Known issues
-
-+ Inconsistent x/y height/width coordinate nomenclature and conventions.
-+ Inconsistent masking conventions. (background/preserve should be 0; foreground/change should be 255)
++ Time is always in terms of frames
++ No audio, visual effects only

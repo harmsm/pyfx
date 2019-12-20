@@ -1,4 +1,4 @@
 
 from . import filters
 from . import sprites
-from . import transitions
+from . import blends

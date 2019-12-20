@@ -1,7 +1,9 @@
 
 import pyfx
 
-class Transition:
+from ..base import Effect
+
+class Transition(Effect):
 
     def __init__(self,videoclip,pip_video,pip_start_frame=0):
         """
