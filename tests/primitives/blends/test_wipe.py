@@ -8,10 +8,10 @@ def test_wipe():
 
     # Test sanity checking
     with pytest.raises(ValueError):
-        out = pyfx.visuals.blends.wipe((5,5),start=[5,4],end=[0,4],num_steps=4)
+        out = pyfx.primitives.blends.wipe((5,5),start=[5,4],end=[0,4],num_steps=4)
 
     # Test a wipe from the top left to the bottom right
-    out = pyfx.visuals.blends.wipe((5,5),start=[0,0],end=[4,4],num_steps=3,feather=0)
+    out = pyfx.primitives.blends.wipe((5,5),start=[0,0],end=[4,4],num_steps=3,feather=0)
 
     # output shape is right
     assert out.shape == (4,5,5)

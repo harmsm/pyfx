@@ -87,7 +87,7 @@ class Ghost(Effect):
         glow = pyfx.util.to_array(glow,num_channels=4,dtype=np.uint8)
 
         # Create a halo alpha channel for the glow
-        halo = pyfx.visuals.filters.create_halo(1-diff,
+        halo = pyfx.primitives.filters.create_halo(1-diff,
                                                 decay_scalar=self.decay_scalar[t],
                                                 halo_size=self.halo_size[t])
         halo_alpha = pyfx.util.to_array(halo*self.total_alpha[t],

@@ -71,7 +71,7 @@ class GlowingParticles(Effect):
 
         self._interpolate_waypoints(smooth_window_len)
 
-        self._sprite_generator = pyfx.visuals.sprites.GlowingParticleGenerator(hue=self.hue,
+        self._sprite_generator = pyfx.primitives.sprites.GlowingParticleGenerator(hue=self.hue,
                                                           radius_pareto=self.radius_pareto[0],
                                                           radius_max=self.radius_max[0],
                                                           intensity_pareto=self.intensity_pareto[0],

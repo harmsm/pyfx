@@ -27,7 +27,7 @@ class SingleSprite(Effect):
         if sprite is not None:
             self._sprite = sprite
         else:
-            self._sprite = pyfx.visuals.sprites.GlowingParticle(radius=self.radius[0],
+            self._sprite = pyfx.primitives.sprites.GlowingParticle(radius=self.radius[0],
                                                                       hue=self.hue[0])
 
         self._baked = True

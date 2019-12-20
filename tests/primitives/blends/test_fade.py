@@ -5,7 +5,7 @@ import numpy as np
 
 def test_fade():
 
-    mask = pyfx.visuals.blends.fade((5,5),5)
+    mask = pyfx.primitives.blends.fade((5,5),5)
     assert mask.shape == (6,5,5)
 
     assert np.array_equal(mask[0,:],np.zeros((5,5),dtype=np.uint8))

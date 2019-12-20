@@ -65,7 +65,7 @@ class GlowingEyes(Effect):
                                                        min_time_visible)
         self._human_faces.bake()
 
-        self._eye_sprite = pyfx.visuals.sprites.GlowingParticle(radius=4)
+        self._eye_sprite = pyfx.primitives.sprites.GlowingParticle(radius=4)
 
         self._left_eye_coord = {}
         self._right_eye_coord = {}

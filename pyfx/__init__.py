@@ -4,7 +4,7 @@ from . import effects
 from . import physics
 from . import processors
 from . import util
-from . import visuals
+from . import primitives
 
 from .core import VideoClip
 from .core import MultiClip
