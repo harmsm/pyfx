@@ -1,3 +1,3 @@
 
-from .crossfade import CrossFade
-from .wipe import Wipe
+from .fade import fade
+from .wipe import wipe

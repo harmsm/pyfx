@@ -1,24 +1,30 @@
 
 import pyfx
-from .base import Transition
-
 from skimage import draw
-
 import numpy as np
 
-def _create_wipe_masks(shape,start,end,num_steps,feather=0):
+def transition_mask(shape,num_steps,start=None,end=None,feather=0):
     """
-    Create a num_steps long collection of 0-1 float masks to wipe
+    Create a num_steps long collection of 0-255 int masks to wipe
     between "start" and "end" coordinates along the image.
 
-    shape: shape of image to create wipe mask for
-    start: position from which to start the wipe (must be on an edge)
-    end: position at which to end the wipe (does not have to be on
-         an edge)
-    num_steps: number of steps over which to wipe
-    feather: create a smooth edge that is feather steps in width
+    shape: 2-tuple, shape of image to create wipe mask for
+    start: 2-tuple, position from which to start the wipe (must be on an edge)
+           If None, left middle
+    end: 2-tuple, position at which to end the wipe (does not have to be on
+         an edge)  If none, right middle
+    num_steps: int, number of steps over which to wipe
+    feather: bool, create a smooth edge that is feather steps in width
              along wipe line
     """
+
+    # (middle,left)
+    if start is None:
+        start = (int(shape[0]/2),0)
+
+    # (middle,right)
+    if end is None:
+        end = (int(shape[0]/2),shape[1])
 
     # If feather is specified
     if feather > 0:
@@ -260,7 +266,6 @@ def _create_wipe_masks(shape,start,end,num_steps,feather=0):
         cs[feather:] = cs[feather:] - cs[:-feather]
         out_masks = cs[feather-1:]/feather
 
-    return out_masks
+    # Return 0-255 mask array
 
-class Wipe(Transition):
-    pass
+    return pyfx.util.to_array(out_masks,dtype=np.uint8,num_channels=1)
